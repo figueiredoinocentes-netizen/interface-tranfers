@@ -632,16 +632,54 @@
 <script>
 const HOTEL = 'Onyria';
 const DRIVERS = ['Abdel Rahman', 'Carlos Mendes', 'Jorge Pinheiro', 'Sandro Costa', 'Miguel Ferreira'];
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxFCFuyaAO1MG0s4ZF6Uwz_Ilm1Kum7RXAcxr0YMqVXIdLIsU3C5c12UIbnY-ryBwolxw/exec';
+
 let dir = 'h2a';
 let payment = 'driver';
 let transfers = [];
-try { transfers = JSON.parse(localStorage.getItem('vianta_onyria') || '[]'); } catch(e) {}
+
+// ── Google Sheets API ──────────────────────────────────────────
+
+async function apiGet() {
+  try {
+    const res = await fetch(SCRIPT_URL);
+    const data = await res.json();
+    return data;
+  } catch(e) {
+    console.error('Erro ao carregar transfers:', e);
+    return [];
+  }
+}
+
+async function apiPost(payload) {
+  try {
+    await fetch(SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  } catch(e) {
+    console.error('Erro ao guardar transfer:', e);
+  }
+}
+
+async function apiUpdate(payload) {
+  try {
+    await fetch(SCRIPT_URL + '?action=update', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  } catch(e) {
+    console.error('Erro ao atualizar transfer:', e);
+  }
+}
+
+// ── Tabs ───────────────────────────────────────────────────────
 
 function switchTab(t) {
   document.querySelectorAll('.tab').forEach((b, i) => b.classList.toggle('active', (t === 'hotel' && i === 0) || (t === 'duarte' && i === 1)));
   document.getElementById('page-hotel').classList.toggle('active', t === 'hotel');
   document.getElementById('page-duarte').classList.toggle('active', t === 'duarte');
-  if (t === 'duarte') renderPanel();
+  if (t === 'duarte') loadPanel();
 }
 
 function setDir(d) {
@@ -659,7 +697,9 @@ function setPayment(p) {
   document.getElementById('btn-pay-hotel').classList.toggle('selected', p === 'hotel');
 }
 
-function submitTransfer() {
+// ── Submit form ────────────────────────────────────────────────
+
+async function submitTransfer() {
   const name = document.getElementById('f-name').value.trim();
   const adults = document.getElementById('f-adults').value;
   const date = document.getElementById('f-date').value;
@@ -668,6 +708,11 @@ function submitTransfer() {
     alert('Por favor preenche todos os campos obrigatórios (*).');
     return;
   }
+
+  const btn = document.querySelector('.btn-submit');
+  btn.textContent = 'A enviar…';
+  btn.disabled = true;
+
   const t = {
     id: Date.now(), hotel: HOTEL, dir,
     name,
@@ -682,15 +727,29 @@ function submitTransfer() {
     notes: document.getElementById('f-notes').value.trim(),
     status: 'novo', driver: ''
   };
-  transfers.unshift(t);
-  try { localStorage.setItem('vianta_onyria', JSON.stringify(transfers)); } catch(e) {}
+
+  await apiPost(t);
+
   ['f-name','f-adults','f-children','f-luggage','f-date','f-time','f-flight','f-arrival','f-notes'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('f-child-seat').checked = false;
   setDir('h2a');
   setPayment('driver');
+
+  btn.textContent = 'Enviar pedido';
+  btn.disabled = false;
+
   const banner = document.getElementById('success-banner');
   banner.style.display = 'block';
   setTimeout(() => { banner.style.display = 'none'; }, 4000);
+}
+
+// ── Panel ──────────────────────────────────────────────────────
+
+async function loadPanel() {
+  const list = document.getElementById('transfers-list');
+  list.innerHTML = '<div class="empty"><span class="empty-icon">⏳</span>A carregar…</div>';
+  transfers = await apiGet();
+  renderPanel();
 }
 
 function fmtDate(d) {
@@ -763,16 +822,19 @@ function renderPanel() {
   }).join('');
 }
 
-function assignDriver(id, driver) {
-  const t = transfers.find(x => x.id === id);
-  if (t) { t.driver = driver; try { localStorage.setItem('vianta_onyria', JSON.stringify(transfers)); } catch(e) {} }
+async function assignDriver(id, driver) {
+  const t = transfers.find(x => x.id == id);
+  if (t) {
+    t.driver = driver;
+    await apiUpdate({ id: t.id, driver });
+  }
 }
 
-function showCopy(id) {
-  const t = transfers.find(x => x.id === id);
+async function showCopy(id) {
+  const t = transfers.find(x => x.id == id);
   if (!t) return;
   t.status = 'enviado';
-  try { localStorage.setItem('vianta_onyria', JSON.stringify(transfers)); } catch(e) {}
+  await apiUpdate({ id: t.id, status: 'enviado' });
   document.getElementById('copy-' + id).textContent = buildMsg(t);
   document.getElementById('copy-' + id).style.display = 'block';
   document.getElementById('clipbtn-' + id).style.display = 'flex';
