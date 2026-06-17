@@ -790,24 +790,24 @@ function renderPanel() {
   }
 
   list.innerHTML = transfers.map(t => {
-    const opts = DRIVERS.map(d => '<option value="' + d + '" ' + (t.driver === d ? 'selected' : '') + '>' + d + '</option>').join('');
-    const childTag = t.childSeat ? '<span class="tag tag-child">cadeirinha</span>' : '';
+    const childTag = t.childSeat == true || t.childSeat === 'true' ? '<span class="tag tag-child">cadeirinha</span>' : '';
     const payTag = t.payment === 'hotel' ? '<span class="tag tag-hotel">pag. hotel</span>' : '';
-    const dirIcon = t.dir === 'h2a' ? '🏨→✈️' : '✈️→🏨';
+    const dirIcon = t.dir === 'h2a' ? '🏨 → ✈️' : '✈️ → 🏨';
+    const dirText = t.dir === 'h2a' ? 'Hotel → Aeroporto' : 'Aeroporto → Hotel';
     return '<div class="card" id="card-' + t.id + '">' +
       '<div class="card-header">' +
         '<div>' +
           '<div class="card-name">' + t.name + childTag + payTag + '</div>' +
-          '<div class="card-meta">' + dirIcon + ' ' + dirLabel(t.dir) + ' · ' + t.hotel + '</div>' +
+          '<div class="card-meta">' + dirIcon + ' ' + dirText + '</div>' +
         '</div>' +
         '<span class="status-badge status-' + t.status + '" id="badge-' + t.id + '">' + t.status + '</span>' +
       '</div>' +
       '<div class="card-details">' +
-        '<div>📅 ' + fmtDate(t.date) + ' às <strong>' + t.time + '</strong></div>' +
-        '<div>👥 <strong>' + t.adults + '</strong> adulto' + (t.adults !== 1 ? 's' : '') + (t.children ? ' + ' + t.children + ' criança' + (t.children !== 1 ? 's' : '') : '') + '</div>' +
-        (t.luggage ? '<div>🧳 <strong>' + t.luggage + '</strong> bagagem' + (t.luggage !== 1 ? 's' : '') + '</div>' : '') +
+        '<div>📅 <strong>' + fmtDate(t.date) + '</strong> às <strong>' + t.time + '</strong></div>' +
+        '<div>👥 <strong>' + t.adults + '</strong> adulto' + (t.adults != 1 ? 's' : '') + (t.children > 0 ? ' + <strong>' + t.children + '</strong> criança' + (t.children != 1 ? 's' : '') : '') + '</div>' +
+        (t.luggage > 0 ? '<div>🧳 <strong>' + t.luggage + '</strong> bagagem' + (t.luggage != 1 ? 's' : '') + '</div>' : '') +
         '<div>💳 ' + (t.payment === 'driver' ? 'Pag. motorista' : 'Pag. hotel') + '</div>' +
-        (t.flight ? '<div>✈️ ' + t.flight + (t.arrival ? ' — chegada ' + t.arrival : '') + '</div>' : '') +
+        (t.flight ? '<div>✈️ Voo <strong>' + t.flight + '</strong>' + (t.arrival ? ' — chegada <strong>' + t.arrival + '</strong>' : '') + '</div>' : '') +
         (t.notes ? '<div style="grid-column:1/-1">📝 ' + t.notes + '</div>' : '') +
       '</div>' +
       '<div class="card-actions">' +
