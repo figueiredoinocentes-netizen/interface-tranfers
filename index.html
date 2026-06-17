@@ -811,9 +811,6 @@ function renderPanel() {
         (t.notes ? '<div style="grid-column:1/-1">📝 ' + t.notes + '</div>' : '') +
       '</div>' +
       '<div class="card-actions">' +
-        '<select class="driver-select" id="drv-' + t.id + '" onchange="assignDriver(' + t.id + ', this.value)">' +
-          '<option value="">Atribuir motorista...</option>' + opts +
-        '</select>' +
         '<button class="btn-copy-msg" onclick="showCopy(' + t.id + ')">Copiar mensagem</button>' +
       '</div>' +
       '<div class="copy-block" id="copy-' + t.id + '"></div>' +
