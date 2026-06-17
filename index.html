@@ -42,9 +42,30 @@
     font-family: var(--font);
     background: var(--bg);
     color: var(--text);
-    min-height: 100vh;
     font-size: 15px;
     line-height: 1.5;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .main-grid {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 440px 1fr;
+    overflow: hidden;
+  }
+
+  .left-col {
+    overflow-y: auto;
+    border-right: 0.5px solid var(--border);
+    background: var(--bg);
+  }
+
+  .right-col {
+    overflow-y: auto;
+    background: var(--surface2);
   }
 
   /* TOPBAR — dark Vianta branding */
@@ -114,8 +135,6 @@
   /* PAGE HEADER (light) */
   .page-header {
     padding: 28px 28px 0;
-    max-width: 540px;
-    margin: 0 auto;
     display: flex;
     align-items: center;
     gap: 10px;
@@ -149,8 +168,6 @@
 
   /* FORM CONTAINER */
   .container {
-    max-width: 540px;
-    margin: 0 auto;
     padding: 20px 28px 80px;
   }
 
@@ -323,8 +340,6 @@
 
   /* PANEL */
   .panel-container {
-    max-width: 680px;
-    margin: 0 auto;
     padding: 32px 28px 80px;
   }
 
@@ -529,6 +544,20 @@
 
   .empty-icon { font-size: 36px; margin-bottom: 10px; display: block; }
 
+  @media (max-width: 768px) {
+    .main-grid {
+      grid-template-columns: 1fr;
+      overflow: visible;
+    }
+    .left-col, .right-col {
+      overflow-y: visible;
+    }
+    body {
+      height: auto;
+      overflow: auto;
+    }
+  }
+
   @media (max-width: 480px) {
     .topbar { padding: 0 16px; }
     .form-row { grid-template-columns: 1fr; }
@@ -548,15 +577,12 @@
     <div class="logo-divider"></div>
     <span class="logo-text">Transfers</span>
   </div>
-  <div class="tab-bar">
-    <button class="tab active" onclick="switchTab('hotel')">Marcação</button>
-    <button class="tab" onclick="switchTab('duarte')">Painel</button>
-  </div>
 </div>
 
-<!-- HOTEL PAGE -->
-<div id="page-hotel" class="page active">
+<div class="main-grid">
 
+<!-- LEFT COL — Formulário -->
+<div class="left-col">
   <div class="page-header">
     <div class="page-header-icon">🏨</div>
     <div>
@@ -656,9 +682,10 @@
     <div class="success-banner" id="success-banner">✓ Pedido enviado com sucesso. A equipa Vianta irá tratar de tudo.</div>
   </div>
 </div>
+</div>
 
-<!-- DUARTE PANEL -->
-<div id="page-duarte" class="page">
+<!-- RIGHT COL — Painel -->
+<div class="right-col">
   <div class="panel-container">
     <div class="panel-header">
       <div>
@@ -670,6 +697,8 @@
     <div id="transfers-list"></div>
   </div>
 </div>
+
+</div><!-- end main-grid -->
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -701,14 +730,9 @@ async function apiUpdate(payload) {
   if (error) console.error('Erro ao atualizar transfer:', error);
 }
 
-// ── Tabs ───────────────────────────────────────────────────────
+// ── Init ───────────────────────────────────────────────────────
 
-function switchTab(t) {
-  document.querySelectorAll('.tab').forEach((b, i) => b.classList.toggle('active', (t === 'hotel' && i === 0) || (t === 'duarte' && i === 1)));
-  document.getElementById('page-hotel').classList.toggle('active', t === 'hotel');
-  document.getElementById('page-duarte').classList.toggle('active', t === 'duarte');
-  if (t === 'duarte') loadPanel();
-}
+document.addEventListener('DOMContentLoaded', loadPanel);
 
 function setDir(d) {
   dir = d;
