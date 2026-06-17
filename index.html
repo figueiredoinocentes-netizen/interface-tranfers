@@ -671,48 +671,34 @@
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const HOTEL = 'Onyria';
-const DRIVERS = ['Abdel Rahman', 'Carlos Mendes', 'Jorge Pinheiro', 'Sandro Costa', 'Miguel Ferreira'];
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzlXKePkQ0doW6w6N9Z2i13qZTDJrayAYj-DWoEUT37t1NLgyqK2FQveAt542OGHJn4IQ/exec';
+const SUPABASE_URL = 'https://bcnhtghlnabvxpnfwlfa.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJjbmh0Z2hsbmFidnhwbmZ3bGZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2OTY0MDUsImV4cCI6MjA5NzI3MjQwNX0.nE9Bjx_2pPhj5T9FCU6-WwL4tqgyvewLEWJ6y0KIF2M';
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let dir = 'h2a';
 let payment = 'driver';
 let transfers = [];
 
-// ── Google Sheets API ──────────────────────────────────────────
+// ── Supabase API ───────────────────────────────────────────────
 
 async function apiGet() {
-  try {
-    const res = await fetch(SCRIPT_URL);
-    const data = await res.json();
-    return data;
-  } catch(e) {
-    console.error('Erro ao carregar transfers:', e);
-    return [];
-  }
+  const { data, error } = await db.from('transfers').select('*').order('created_at', { ascending: false });
+  if (error) { console.error('Erro ao carregar transfers:', error); return []; }
+  return data;
 }
 
 async function apiPost(payload) {
-  try {
-    await fetch(SCRIPT_URL, {
-      method: 'POST',
-      body: JSON.stringify(payload)
-    });
-  } catch(e) {
-    console.error('Erro ao guardar transfer:', e);
-  }
+  const { error } = await db.from('transfers').insert([payload]);
+  if (error) console.error('Erro ao guardar transfer:', error);
 }
 
 async function apiUpdate(payload) {
-  try {
-    await fetch(SCRIPT_URL, {
-      method: 'POST',
-      body: JSON.stringify({ ...payload, _action: 'update' })
-    });
-  } catch(e) {
-    console.error('Erro ao atualizar transfer:', e);
-  }
+  const { id, ...fields } = payload;
+  const { error } = await db.from('transfers').update(fields).eq('id', id);
+  if (error) console.error('Erro ao atualizar transfer:', error);
 }
 
 // ── Tabs ───────────────────────────────────────────────────────
@@ -756,12 +742,12 @@ async function submitTransfer() {
   btn.disabled = true;
 
   const t = {
-    id: Date.now(), hotel: HOTEL, dir,
+    id: String(Date.now()), hotel: HOTEL, dir,
     name,
     adults: parseInt(adults) || 0,
     children: parseInt(document.getElementById('f-children').value) || 0,
     luggage: parseInt(document.getElementById('f-luggage').value) || 0,
-    childSeat: document.getElementById('f-child-seat').checked,
+    child_seat: document.getElementById('f-child-seat').checked,
     payment,
     date, time,
     flight: document.getElementById('f-flight').value.trim(),
@@ -823,7 +809,7 @@ function buildMsg(t) {
   if (t.children) m += ' | Crianças: ' + t.children;
   m += '\n';
   if (t.luggage) m += '🧳 Bagagens: ' + t.luggage + '\n';
-  if (t.childSeat) m += '🪑 Cadeirinha necessária\n';
+  if (t.child_seat) m += '🪑 Cadeirinha necessária\n';
   m += '💳 Pagamento: ' + (t.payment === 'driver' ? 'ao motorista' : 'ao hotel') + '\n';
   if (t.flight) { m += '✈️ Voo: ' + t.flight; if (t.arrival) m += ' — chegada ' + t.arrival; m += '\n'; }
   if (t.notes) m += '📝 Notas: ' + t.notes + '\n';
@@ -841,7 +827,7 @@ function renderPanel() {
   }
 
   list.innerHTML = transfers.map(t => {
-    const childTag = t.childSeat == true || t.childSeat === 'true' ? '<span class="tag tag-child">cadeirinha</span>' : '';
+    const childTag = t.child_seat ? '<span class="tag tag-child">cadeirinha</span>' : '';
     const payTag = t.payment === 'hotel' ? '<span class="tag tag-hotel">pag. hotel</span>' : '';
     const dirIcon = t.dir === 'h2a' ? '🏨 → ✈️' : '✈️ → 🏨';
     const dirText = t.dir === 'h2a' ? 'Hotel → Aeroporto' : 'Aeroporto → Hotel';
