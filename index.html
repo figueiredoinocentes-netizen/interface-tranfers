@@ -478,6 +478,48 @@
 
   .btn-clipboard:hover { color: var(--gold); }
 
+  .btn-edit {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 7px 14px;
+    font-size: 12px;
+    cursor: pointer;
+    color: var(--muted);
+    font-family: var(--font);
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .btn-edit:hover { border-color: var(--gold); color: var(--gold); }
+
+  .btn-save {
+    background: var(--topbar-bg);
+    color: var(--topbar-gold);
+    border: none;
+    border-radius: var(--radius);
+    padding: 8px 16px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: var(--font);
+    letter-spacing: 0.05em;
+  }
+  .btn-cancel {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 8px 14px;
+    font-size: 12px;
+    cursor: pointer;
+    color: var(--muted);
+    font-family: var(--font);
+  }
+
+  .edit-form { margin-top: 12px; }
+  .edit-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+  .edit-group { display: flex; flex-direction: column; gap: 4px; }
+  .edit-group label { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+  .edit-actions { display: flex; gap: 8px; margin-top: 14px; }
+
   .empty {
     text-align: center;
     padding: 60px 20px;
@@ -809,21 +851,60 @@ function renderPanel() {
           '<div class="card-name">' + t.name + childTag + payTag + '</div>' +
           '<div class="card-meta">' + dirIcon + ' ' + dirText + '</div>' +
         '</div>' +
-        '<span class="status-badge status-' + t.status + '" id="badge-' + t.id + '">' + t.status + '</span>' +
+        '<div style="display:flex;align-items:center;gap:8px">' +
+          '<button class="btn-edit" onclick="startEdit(' + t.id + ')">✏️ Editar</button>' +
+          '<span class="status-badge status-' + t.status + '" id="badge-' + t.id + '">' + t.status + '</span>' +
+        '</div>' +
       '</div>' +
-      '<div class="card-details">' +
-        '<div>📅 <strong>' + fmtDate(t.date) + '</strong> às <strong>' + fmtTime(t.time) + '</strong></div>' +
-        '<div>👥 <strong>' + t.adults + '</strong> adulto' + (t.adults != 1 ? 's' : '') + (t.children > 0 ? ' + <strong>' + t.children + '</strong> criança' + (t.children != 1 ? 's' : '') : '') + '</div>' +
-        (t.luggage > 0 ? '<div>🧳 <strong>' + t.luggage + '</strong> bagagem' + (t.luggage != 1 ? 's' : '') + '</div>' : '') +
-        '<div>💳 ' + (t.payment === 'driver' ? 'Pag. motorista' : 'Pag. hotel') + '</div>' +
-        (t.flight ? '<div>✈️ Voo <strong>' + t.flight + '</strong>' + (t.arrival ? ' — chegada <strong>' + fmtTime(t.arrival) + '</strong>' : '') + '</div>' : '') +
-        (t.notes ? '<div style="grid-column:1/-1">📝 ' + t.notes + '</div>' : '') +
+      '<div id="view-' + t.id + '">' +
+        '<div class="card-details">' +
+          '<div>📅 <strong>' + fmtDate(t.date) + '</strong> às <strong>' + fmtTime(t.time) + '</strong></div>' +
+          '<div>👥 <strong>' + t.adults + '</strong> adulto' + (t.adults != 1 ? 's' : '') + (t.children > 0 ? ' + <strong>' + t.children + '</strong> criança' + (t.children != 1 ? 's' : '') : '') + '</div>' +
+          (t.luggage > 0 ? '<div>🧳 <strong>' + t.luggage + '</strong> bagagem' + (t.luggage != 1 ? 's' : '') + '</div>' : '') +
+          '<div>💳 ' + (t.payment === 'driver' ? 'Pag. motorista' : 'Pag. hotel') + '</div>' +
+          (t.flight ? '<div>✈️ Voo <strong>' + t.flight + '</strong>' + (t.arrival ? ' — chegada <strong>' + fmtTime(t.arrival) + '</strong>' : '') + '</div>' : '') +
+          (t.notes ? '<div style="grid-column:1/-1">📝 ' + t.notes + '</div>' : '') +
+        '</div>' +
+        '<div class="card-actions">' +
+          '<button class="btn-copy-msg" onclick="showCopy(' + t.id + ')">Copiar mensagem</button>' +
+        '</div>' +
+        '<div class="copy-block" id="copy-' + t.id + '"></div>' +
+        '<button class="btn-clipboard" id="clipbtn-' + t.id + '" onclick="toClipboard(' + t.id + ')">📋 Copiar para clipboard</button>' +
       '</div>' +
-      '<div class="card-actions">' +
-        '<button class="btn-copy-msg" onclick="showCopy(' + t.id + ')">Copiar mensagem</button>' +
+      '<div id="edit-' + t.id + '" style="display:none">' +
+        '<div class="edit-form">' +
+          '<div class="edit-row">' +
+            '<div class="edit-group" style="grid-column:1/-1"><label>Nome</label><input type="text" id="e-name-' + t.id + '" value="' + (t.name||'') + '" /></div>' +
+          '</div>' +
+          '<div class="edit-row">' +
+            '<div class="edit-group"><label>Data</label><input type="date" id="e-date-' + t.id + '" value="' + (t.date ? t.date.split('T')[0] : '') + '" /></div>' +
+            '<div class="edit-group"><label>Hora de recolha</label><input type="time" id="e-time-' + t.id + '" value="' + extractTime(t.time) + '" /></div>' +
+          '</div>' +
+          '<div class="edit-row">' +
+            '<div class="edit-group"><label>Adultos</label><input type="number" id="e-adults-' + t.id + '" value="' + (t.adults||0) + '" min="0" max="8" /></div>' +
+            '<div class="edit-group"><label>Crianças</label><input type="number" id="e-children-' + t.id + '" value="' + (t.children||0) + '" min="0" max="8" /></div>' +
+          '</div>' +
+          '<div class="edit-row">' +
+            '<div class="edit-group"><label>Bagagens</label><input type="number" id="e-luggage-' + t.id + '" value="' + (t.luggage||0) + '" min="0" /></div>' +
+            '<div class="edit-group"><label>Direção</label><select id="e-dir-' + t.id + '"><option value="h2a"' + (t.dir==='h2a'?' selected':'') + '>Hotel → Aeroporto</option><option value="a2h"' + (t.dir==='a2h'?' selected':'') + '>Aeroporto → Hotel</option></select></div>' +
+          '</div>' +
+          '<div class="edit-row">' +
+            '<div class="edit-group"><label>Nº de voo</label><input type="text" id="e-flight-' + t.id + '" value="' + (t.flight||'') + '" /></div>' +
+            '<div class="edit-group"><label>Hora de chegada</label><input type="time" id="e-arrival-' + t.id + '" value="' + extractTime(t.arrival) + '" /></div>' +
+          '</div>' +
+          '<div class="edit-row">' +
+            '<div class="edit-group"><label>Pagamento</label><select id="e-payment-' + t.id + '"><option value="driver"' + (t.payment==='driver'?' selected':'') + '>Ao motorista</option><option value="hotel"' + (t.payment==='hotel'?' selected':'') + '>Ao hotel</option></select></div>' +
+            '<div class="edit-group"><label>Estado</label><select id="e-status-' + t.id + '"><option value="novo"' + (t.status==='novo'?' selected':'') + '>Novo</option><option value="enviado"' + (t.status==='enviado'?' selected':'') + '>Enviado</option></select></div>' +
+          '</div>' +
+          '<div class="edit-row">' +
+            '<div class="edit-group" style="grid-column:1/-1"><label>Notas</label><textarea id="e-notes-' + t.id + '">' + (t.notes||'') + '</textarea></div>' +
+          '</div>' +
+          '<div class="edit-actions">' +
+            '<button class="btn-save" onclick="saveEdit(' + t.id + ')">Guardar</button>' +
+            '<button class="btn-cancel" onclick="cancelEdit(' + t.id + ')">Cancelar</button>' +
+          '</div>' +
+        '</div>' +
       '</div>' +
-      '<div class="copy-block" id="copy-' + t.id + '"></div>' +
-      '<button class="btn-clipboard" id="clipbtn-' + t.id + '" onclick="toClipboard(' + t.id + ')">📋 Copiar para clipboard</button>' +
     '</div>';
   }).join('');
 }
@@ -849,6 +930,55 @@ async function showCopy(id) {
   badge.textContent = 'enviado';
   const novos = transfers.filter(x => x.status === 'novo').length;
   document.getElementById('count-badge').textContent = novos + ' novo' + (novos !== 1 ? 's' : '');
+}
+
+function extractTime(t) {
+  if (!t) return '';
+  if (t.includes('T')) return new Date(t).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Lisbon' });
+  return t;
+}
+
+function startEdit(id) {
+  document.getElementById('view-' + id).style.display = 'none';
+  document.getElementById('edit-' + id).style.display = 'block';
+}
+
+function cancelEdit(id) {
+  document.getElementById('edit-' + id).style.display = 'none';
+  document.getElementById('view-' + id).style.display = 'block';
+}
+
+async function saveEdit(id) {
+  const t = transfers.find(x => x.id == id);
+  if (!t) return;
+
+  const updated = {
+    id: t.id,
+    name: document.getElementById('e-name-' + id).value.trim(),
+    date: document.getElementById('e-date-' + id).value,
+    time: document.getElementById('e-time-' + id).value,
+    adults: parseInt(document.getElementById('e-adults-' + id).value) || 0,
+    children: parseInt(document.getElementById('e-children-' + id).value) || 0,
+    luggage: parseInt(document.getElementById('e-luggage-' + id).value) || 0,
+    dir: document.getElementById('e-dir-' + id).value,
+    flight: document.getElementById('e-flight-' + id).value.trim(),
+    arrival: document.getElementById('e-arrival-' + id).value,
+    payment: document.getElementById('e-payment-' + id).value,
+    status: document.getElementById('e-status-' + id).value,
+    notes: document.getElementById('e-notes-' + id).value.trim(),
+  };
+
+  const btn = document.querySelector('#edit-' + id + ' .btn-save');
+  btn.textContent = 'A guardar…';
+  btn.disabled = true;
+
+  await apiUpdate(updated);
+  Object.assign(t, updated);
+
+  btn.textContent = 'Guardar';
+  btn.disabled = false;
+
+  renderPanel();
 }
 
 function toClipboard(id) {
