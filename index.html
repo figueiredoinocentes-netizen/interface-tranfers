@@ -42,31 +42,13 @@
     font-family: var(--font);
     background: var(--bg);
     color: var(--text);
+    min-height: 100vh;
     font-size: 15px;
     line-height: 1.5;
-    height: 100vh;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
   }
 
-  .main-grid {
-    flex: 1;
-    display: grid;
-    grid-template-columns: 520px 1fr;
-    overflow: hidden;
-  }
-
-  .left-col {
-    overflow-y: auto;
-    border-right: 0.5px solid var(--border);
-    background: var(--bg);
-  }
-
-  .right-col {
-    overflow-y: auto;
-    background: var(--surface2);
-  }
+  .page { display: none; }
+  .page.active { display: block; }
 
   /* TOPBAR — dark Vianta branding */
   .topbar {
@@ -135,6 +117,8 @@
   /* PAGE HEADER (light) */
   .page-header {
     padding: 28px 28px 0;
+    max-width: 800px;
+    margin: 0 auto;
     display: flex;
     align-items: center;
     gap: 10px;
@@ -168,6 +152,8 @@
 
   /* FORM CONTAINER */
   .container {
+    max-width: 800px;
+    margin: 0 auto;
     padding: 20px 28px 80px;
   }
 
@@ -340,7 +326,8 @@
 
   /* PANEL */
   .panel-container {
-    max-width: 680px;
+    max-width: 800px;
+    margin: 0 auto;
     padding: 32px 28px 80px;
   }
 
@@ -412,7 +399,7 @@
     font-weight: 500;
   }
 
-  .status-pendente, .status-novo { background: var(--warning-bg); color: var(--warning-text); }
+  .status-pendente, .status-novo { background: var(--info-bg); color: var(--info-text); }
   .status-confirmado, .status-enviado { background: var(--success-bg); color: var(--success-text); }
   .status-cancelado { background: var(--surface2); color: var(--muted); }
 
@@ -559,20 +546,6 @@
 
   .empty-icon { font-size: 36px; margin-bottom: 10px; display: block; }
 
-  @media (max-width: 768px) {
-    .main-grid {
-      grid-template-columns: 1fr;
-      overflow: visible;
-    }
-    .left-col, .right-col {
-      overflow-y: visible;
-    }
-    body {
-      height: auto;
-      overflow: auto;
-    }
-  }
-
   @media (max-width: 480px) {
     .topbar { padding: 0 16px; }
     .form-row { grid-template-columns: 1fr; }
@@ -592,12 +565,14 @@
     <div class="logo-divider"></div>
     <span class="logo-text">Transfers</span>
   </div>
+  <div class="tab-bar">
+    <button class="tab active" onclick="switchTab('hotel')">Nova marcação</button>
+    <button class="tab" onclick="switchTab('painel')">Os meus pedidos</button>
+  </div>
 </div>
 
-<div class="main-grid">
-
-<!-- LEFT COL — Formulário -->
-<div class="left-col">
+<!-- HOTEL PAGE -->
+<div id="page-hotel" class="page active">
   <div class="page-header">
     <div class="page-header-icon">🏨</div>
     <div>
@@ -698,8 +673,8 @@
   </div>
 </div>
 
-<!-- RIGHT COL — Painel -->
-<div class="right-col">
+<!-- PAINEL PAGE -->
+<div id="page-painel" class="page">
   <div class="panel-container">
     <div class="panel-header">
       <div>
@@ -711,8 +686,6 @@
     <div id="transfers-list"></div>
   </div>
 </div>
-
-</div><!-- end main-grid -->
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -744,9 +717,14 @@ async function apiUpdate(payload) {
   if (error) console.error('Erro ao atualizar transfer:', error);
 }
 
-// ── Init ───────────────────────────────────────────────────────
+// ── Tabs ───────────────────────────────────────────────────────
 
-document.addEventListener('DOMContentLoaded', loadPanel);
+function switchTab(t) {
+  document.querySelectorAll('.tab').forEach((b, i) => b.classList.toggle('active', (t === 'hotel' && i === 0) || (t === 'painel' && i === 1)));
+  document.getElementById('page-hotel').classList.toggle('active', t === 'hotel');
+  document.getElementById('page-painel').classList.toggle('active', t === 'painel');
+  if (t === 'painel') loadPanel();
+}
 
 function setDir(d) {
   dir = d;
@@ -855,7 +833,7 @@ function buildMsg(t) {
 }
 
 function statusLabel(s) {
-  if (s === 'pendente' || s === 'novo') return 'A aguardar confirmação';
+  if (s === 'pendente' || s === 'novo') return 'Pedido submetido';
   if (s === 'confirmado' || s === 'enviado') return 'Confirmado pela Vianta';
   if (s === 'cancelado') return 'Cancelado';
   return s;
@@ -887,10 +865,7 @@ function renderPanel() {
           '<div class="card-name">' + t.name + childTag + payTag + '</div>' +
           '<div class="card-meta">' + dirIcon + ' ' + dirText + '</div>' +
         '</div>' +
-        '<div style="display:flex;align-items:center;gap:8px">' +
-          (pending ? '<button class="btn-edit" onclick="startEdit(\'' + t.id + '\')">✏️ Editar</button>' : '') +
-          '<span class="status-badge status-' + statusClass + '" id="badge-' + t.id + '">' + statusLabel(t.status) + '</span>' +
-        '</div>' +
+        '<span class="status-badge status-' + statusClass + '" id="badge-' + t.id + '">' + statusLabel(t.status) + '</span>' +
       '</div>' +
       '<div id="view-' + t.id + '">' +
         '<div class="card-details">' +
@@ -904,6 +879,7 @@ function renderPanel() {
         '</div>' +
         (pending ?
           '<div class="card-actions">' +
+            '<button class="btn-edit" onclick="startEdit(\'' + t.id + '\')">✏️ Editar</button>' +
             '<button class="btn-cancel-transfer" onclick="cancelTransfer(\'' + t.id + '\')">Cancelar pedido</button>' +
           '</div>' : '') +
       '</div>' +
