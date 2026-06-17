@@ -706,9 +706,9 @@ async function apiPost(payload) {
 
 async function apiUpdate(payload) {
   try {
-    await fetch(SCRIPT_URL + '?action=update', {
+    await fetch(SCRIPT_URL, {
       method: 'POST',
-      body: JSON.stringify(payload)
+      body: JSON.stringify({ ...payload, _action: 'update' })
     });
   } catch(e) {
     console.error('Erro ao atualizar transfer:', e);
