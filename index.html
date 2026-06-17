@@ -754,8 +754,17 @@ async function loadPanel() {
 
 function fmtDate(d) {
   if (!d) return '—';
-  const [y, m, day] = d.split('-');
-  return day + '/' + m + '/' + y;
+  try {
+    return new Date(d).toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Europe/Lisbon' });
+  } catch(e) { return d; }
+}
+
+function fmtTime(t) {
+  if (!t) return '—';
+  try {
+    if (t.includes('T')) return new Date(t).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Lisbon' });
+    return t;
+  } catch(e) { return t; }
 }
 
 function dirLabel(d) {
@@ -803,11 +812,11 @@ function renderPanel() {
         '<span class="status-badge status-' + t.status + '" id="badge-' + t.id + '">' + t.status + '</span>' +
       '</div>' +
       '<div class="card-details">' +
-        '<div>📅 <strong>' + fmtDate(t.date) + '</strong> às <strong>' + t.time + '</strong></div>' +
+        '<div>📅 <strong>' + fmtDate(t.date) + '</strong> às <strong>' + fmtTime(t.time) + '</strong></div>' +
         '<div>👥 <strong>' + t.adults + '</strong> adulto' + (t.adults != 1 ? 's' : '') + (t.children > 0 ? ' + <strong>' + t.children + '</strong> criança' + (t.children != 1 ? 's' : '') : '') + '</div>' +
         (t.luggage > 0 ? '<div>🧳 <strong>' + t.luggage + '</strong> bagagem' + (t.luggage != 1 ? 's' : '') + '</div>' : '') +
         '<div>💳 ' + (t.payment === 'driver' ? 'Pag. motorista' : 'Pag. hotel') + '</div>' +
-        (t.flight ? '<div>✈️ Voo <strong>' + t.flight + '</strong>' + (t.arrival ? ' — chegada <strong>' + t.arrival + '</strong>' : '') + '</div>' : '') +
+        (t.flight ? '<div>✈️ Voo <strong>' + t.flight + '</strong>' + (t.arrival ? ' — chegada <strong>' + fmtTime(t.arrival) + '</strong>' : '') + '</div>' : '') +
         (t.notes ? '<div style="grid-column:1/-1">📝 ' + t.notes + '</div>' : '') +
       '</div>' +
       '<div class="card-actions">' +
