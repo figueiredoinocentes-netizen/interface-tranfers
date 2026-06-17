@@ -412,8 +412,22 @@
     font-weight: 500;
   }
 
-  .status-novo { background: var(--info-bg); color: var(--info-text); }
-  .status-enviado { background: var(--success-bg); color: var(--success-text); }
+  .status-pendente, .status-novo { background: var(--warning-bg); color: var(--warning-text); }
+  .status-confirmado, .status-enviado { background: var(--success-bg); color: var(--success-text); }
+  .status-cancelado { background: var(--surface2); color: var(--muted); }
+
+  .btn-cancel-transfer {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 7px 14px;
+    font-size: 12px;
+    cursor: pointer;
+    color: var(--muted);
+    font-family: var(--font);
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .btn-cancel-transfer:hover { border-color: #c0392b; color: #c0392b; }
 
   .card-details {
     display: grid;
@@ -689,10 +703,10 @@
   <div class="panel-container">
     <div class="panel-header">
       <div>
-        <div class="panel-title">Transfers</div>
-        <div class="panel-sub">Atribui o motorista e copia a mensagem.</div>
+        <div class="panel-title">Os seus pedidos de transfer</div>
+        <div class="panel-sub">A Vianta irá confirmar cada pedido em breve.</div>
       </div>
-      <span class="count-badge" id="count-badge">0 novos</span>
+      <span class="count-badge" id="count-badge">0 pendentes</span>
     </div>
     <div id="transfers-list"></div>
   </div>
@@ -777,7 +791,7 @@ async function submitTransfer() {
     flight: document.getElementById('f-flight').value.trim(),
     arrival: document.getElementById('f-arrival').value,
     notes: document.getElementById('f-notes').value.trim(),
-    status: 'novo', driver: ''
+    status: 'pendente', driver: ''
   };
 
   await apiPost(t);
@@ -840,13 +854,22 @@ function buildMsg(t) {
   return m;
 }
 
+function statusLabel(s) {
+  if (s === 'pendente' || s === 'novo') return 'A aguardar confirmação';
+  if (s === 'confirmado' || s === 'enviado') return 'Confirmado pela Vianta';
+  if (s === 'cancelado') return 'Cancelado';
+  return s;
+}
+
+function isPending(s) { return s === 'pendente' || s === 'novo'; }
+
 function renderPanel() {
   const list = document.getElementById('transfers-list');
-  const novos = transfers.filter(t => t.status === 'novo').length;
-  document.getElementById('count-badge').textContent = novos + ' novo' + (novos !== 1 ? 's' : '');
+  const pendentes = transfers.filter(t => isPending(t.status)).length;
+  document.getElementById('count-badge').textContent = pendentes + ' pendente' + (pendentes !== 1 ? 's' : '');
 
   if (!transfers.length) {
-    list.innerHTML = '<div class="empty"><span class="empty-icon">📭</span>Sem transferes por agora.</div>';
+    list.innerHTML = '<div class="empty"><span class="empty-icon">📭</span>Sem pedidos de transfer por agora.</div>';
     return;
   }
 
@@ -855,6 +878,9 @@ function renderPanel() {
     const payTag = t.payment === 'hotel' ? '<span class="tag tag-hotel">pag. hotel</span>' : '';
     const dirIcon = t.dir === 'h2a' ? '🏨 → ✈️' : '✈️ → 🏨';
     const dirText = t.dir === 'h2a' ? 'Hotel → Aeroporto' : 'Aeroporto → Hotel';
+    const pending = isPending(t.status);
+    const statusClass = (t.status === 'pendente' || t.status === 'novo') ? 'pendente' : (t.status === 'confirmado' || t.status === 'enviado') ? 'confirmado' : t.status;
+
     return '<div class="card" id="card-' + t.id + '">' +
       '<div class="card-header">' +
         '<div>' +
@@ -862,8 +888,8 @@ function renderPanel() {
           '<div class="card-meta">' + dirIcon + ' ' + dirText + '</div>' +
         '</div>' +
         '<div style="display:flex;align-items:center;gap:8px">' +
-          '<button class="btn-edit" onclick="startEdit(' + t.id + ')">✏️ Editar</button>' +
-          '<span class="status-badge status-' + t.status + '" id="badge-' + t.id + '">' + t.status + '</span>' +
+          (pending ? '<button class="btn-edit" onclick="startEdit(\'' + t.id + '\')">✏️ Editar</button>' : '') +
+          '<span class="status-badge status-' + statusClass + '" id="badge-' + t.id + '">' + statusLabel(t.status) + '</span>' +
         '</div>' +
       '</div>' +
       '<div id="view-' + t.id + '">' +
@@ -874,12 +900,12 @@ function renderPanel() {
           '<div>💳 ' + (t.payment === 'driver' ? 'Pag. motorista' : 'Pag. hotel') + '</div>' +
           (t.flight ? '<div>✈️ Voo <strong>' + t.flight + '</strong>' + (t.arrival ? ' — chegada <strong>' + fmtTime(t.arrival) + '</strong>' : '') + '</div>' : '') +
           (t.notes ? '<div style="grid-column:1/-1">📝 ' + t.notes + '</div>' : '') +
+          ((!pending && t.driver) ? '<div style="grid-column:1/-1">🚗 Motorista: <strong>' + t.driver + '</strong></div>' : '') +
         '</div>' +
-        '<div class="card-actions">' +
-          '<button class="btn-copy-msg" onclick="showCopy(' + t.id + ')">Copiar mensagem</button>' +
-        '</div>' +
-        '<div class="copy-block" id="copy-' + t.id + '"></div>' +
-        '<button class="btn-clipboard" id="clipbtn-' + t.id + '" onclick="toClipboard(' + t.id + ')">📋 Copiar para clipboard</button>' +
+        (pending ?
+          '<div class="card-actions">' +
+            '<button class="btn-cancel-transfer" onclick="cancelTransfer(\'' + t.id + '\')">Cancelar pedido</button>' +
+          '</div>' : '') +
       '</div>' +
       '<div id="edit-' + t.id + '" style="display:none">' +
         '<div class="edit-form">' +
@@ -904,14 +930,13 @@ function renderPanel() {
           '</div>' +
           '<div class="edit-row">' +
             '<div class="edit-group"><label>Pagamento</label><select id="e-payment-' + t.id + '"><option value="driver"' + (t.payment==='driver'?' selected':'') + '>Ao motorista</option><option value="hotel"' + (t.payment==='hotel'?' selected':'') + '>Ao hotel</option></select></div>' +
-            '<div class="edit-group"><label>Estado</label><select id="e-status-' + t.id + '"><option value="novo"' + (t.status==='novo'?' selected':'') + '>Novo</option><option value="enviado"' + (t.status==='enviado'?' selected':'') + '>Enviado</option></select></div>' +
           '</div>' +
           '<div class="edit-row">' +
             '<div class="edit-group" style="grid-column:1/-1"><label>Notas</label><textarea id="e-notes-' + t.id + '">' + (t.notes||'') + '</textarea></div>' +
           '</div>' +
           '<div class="edit-actions">' +
-            '<button class="btn-save" onclick="saveEdit(' + t.id + ')">Guardar</button>' +
-            '<button class="btn-cancel" onclick="cancelEdit(' + t.id + ')">Cancelar</button>' +
+            '<button class="btn-save" onclick="saveEdit(\'' + t.id + '\')">Guardar</button>' +
+            '<button class="btn-cancel" onclick="cancelEdit(\'' + t.id + '\')">Cancelar</button>' +
           '</div>' +
         '</div>' +
       '</div>' +
@@ -919,27 +944,13 @@ function renderPanel() {
   }).join('');
 }
 
-async function assignDriver(id, driver) {
-  const t = transfers.find(x => x.id == id);
-  if (t) {
-    t.driver = driver;
-    await apiUpdate({ id: t.id, driver });
-  }
-}
-
-async function showCopy(id) {
+async function cancelTransfer(id) {
+  if (!confirm('Tem a certeza que pretende cancelar este pedido?')) return;
   const t = transfers.find(x => x.id == id);
   if (!t) return;
-  t.status = 'enviado';
-  await apiUpdate({ id: t.id, status: 'enviado' });
-  document.getElementById('copy-' + id).textContent = buildMsg(t);
-  document.getElementById('copy-' + id).style.display = 'block';
-  document.getElementById('clipbtn-' + id).style.display = 'flex';
-  const badge = document.getElementById('badge-' + id);
-  badge.className = 'status-badge status-enviado';
-  badge.textContent = 'enviado';
-  const novos = transfers.filter(x => x.status === 'novo').length;
-  document.getElementById('count-badge').textContent = novos + ' novo' + (novos !== 1 ? 's' : '');
+  t.status = 'cancelado';
+  await apiUpdate({ id: t.id, status: 'cancelado' });
+  renderPanel();
 }
 
 function extractTime(t) {
