@@ -373,16 +373,18 @@ function showToast(msg) {
   setTimeout(() => t.classList.remove('show'), 2000);
 }
 
+const API = '/.netlify/functions/sheets';
+
 // ── LOAD ─────────────────────────────────────────
 async function loadAll() {
   const [tr, dr, ve] = await Promise.all([
     db.from('transfers').select('*').order('date', { ascending: true }),
-    db.from('drivers').select('*').eq('active', true).order('name'),
-    db.from('vehicles').select('*').eq('active', true).order('name')
+    fetch(`${API}?type=drivers`).then(r => r.json()),
+    fetch(`${API}?type=vehicles`).then(r => r.json()),
   ]);
   if (tr.data) transfers = tr.data;
-  if (dr.data) drivers = dr.data;
-  if (ve.data) vehicles = ve.data;
+  drivers = Array.isArray(dr) ? dr : [];
+  vehicles = Array.isArray(ve) ? ve : [];
   renderTransfers();
   renderDrivers();
   renderVehicles();
@@ -492,8 +494,8 @@ async function addDriver() {
   const name = document.getElementById('new-driver-name').value.trim();
   const phone = document.getElementById('new-driver-phone').value.trim();
   if (!name) return;
-  const { error } = await db.from('drivers').insert([{ name, phone: phone || null }]);
-  if (error) { showToast('Erro ao adicionar'); return; }
+  const res = await fetch(`${API}?type=drivers`, { method: 'POST', body: JSON.stringify({ name, phone }) });
+  if (!res.ok) { showToast('Erro ao adicionar'); return; }
   document.getElementById('new-driver-name').value = '';
   document.getElementById('new-driver-phone').value = '';
   await loadAll();
@@ -502,7 +504,7 @@ async function addDriver() {
 
 async function removeDriver(id) {
   if (!confirm('Remover este motorista?')) return;
-  await db.from('drivers').update({ active: false }).eq('id', id);
+  await fetch(`${API}?type=drivers`, { method: 'DELETE', body: JSON.stringify({ id }) });
   await loadAll();
   showToast('Removido ✓');
 }
@@ -524,8 +526,8 @@ function renderVehicles() {
 async function addVehicle() {
   const name = document.getElementById('new-vehicle-name').value.trim();
   if (!name) return;
-  const { error } = await db.from('vehicles').insert([{ name }]);
-  if (error) { showToast('Erro ao adicionar'); return; }
+  const res = await fetch(`${API}?type=vehicles`, { method: 'POST', body: JSON.stringify({ name }) });
+  if (!res.ok) { showToast('Erro ao adicionar'); return; }
   document.getElementById('new-vehicle-name').value = '';
   await loadAll();
   showToast('Viatura adicionada ✓');
@@ -533,7 +535,7 @@ async function addVehicle() {
 
 async function removeVehicle(id) {
   if (!confirm('Remover esta viatura?')) return;
-  await db.from('vehicles').update({ active: false }).eq('id', id);
+  await fetch(`${API}?type=vehicles`, { method: 'DELETE', body: JSON.stringify({ id }) });
   await loadAll();
   showToast('Removido ✓');
 }
