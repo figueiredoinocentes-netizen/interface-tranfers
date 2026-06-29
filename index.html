@@ -673,7 +673,7 @@
     <div class="section-label">Voo (opcional)</div>
     <div class="form-row">
       <div class="form-group" style="margin:0;">
-        <label>Nº de voo</label>
+        <label id="flight-label">Nº de voo</label>
         <input type="text" id="f-flight" placeholder="ex. TP1234" />
       </div>
       <div class="form-group" style="margin:0;">
@@ -753,6 +753,7 @@ function setDir(d) {
   document.getElementById('route-text').innerHTML = d === 'h2a'
     ? '<strong>Onyria</strong> → Aeroporto de Lisboa'
     : 'Aeroporto de Lisboa → <strong>Onyria</strong>';
+  document.getElementById('flight-label').innerHTML = 'Nº de voo' + (d === 'a2h' ? ' <span style="color:var(--gold)">*</span>' : '');
 }
 
 function setPayment(p) {
@@ -768,8 +769,13 @@ async function submitTransfer() {
   const adults = document.getElementById('f-adults').value;
   const date = document.getElementById('f-date').value;
   const time = document.getElementById('f-time').value;
+  const flight = document.getElementById('f-flight').value.trim();
   if (!name || !adults || !date || !time) {
     alert('Por favor preenche todos os campos obrigatórios (*).');
+    return;
+  }
+  if (dir === 'a2h' && !flight) {
+    alert('O número de voo é obrigatório para transfers do Aeroporto para o Hotel.');
     return;
   }
 
