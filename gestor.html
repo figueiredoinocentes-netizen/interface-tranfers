@@ -478,13 +478,38 @@ function renderDrivers() {
   const el = document.getElementById('drivers-list');
   if (!drivers.length) { el.innerHTML = '<div class="empty">Sem motoristas.</div>'; return; }
   el.innerHTML = drivers.map(d => `
-    <div class="team-list-item">
-      <div>
+    <div class="team-list-item" id="driver-row-${d.id}">
+      <div style="flex:1;" id="driver-view-${d.id}">
         <div class="team-item-name">${d.name}</div>
         ${d.phone ? `<div class="team-item-sub">${d.phone}</div>` : ''}
       </div>
-      <button class="btn-remove" onclick="removeDriver(${d.id})">Remover</button>
+      <div style="flex:1;display:none;gap:8px;" id="driver-edit-${d.id}">
+        <input class="add-input" id="driver-edit-name-${d.id}" value="${d.name}" style="flex:1;" />
+        <input class="add-input" id="driver-edit-phone-${d.id}" value="${d.phone||''}" style="max-width:120px;" placeholder="Telemóvel" />
+      </div>
+      <div style="display:flex;gap:6px;flex-shrink:0;">
+        <button class="btn-add" id="driver-save-btn-${d.id}" style="display:none;padding:6px 12px;font-size:12px;" onclick="saveDriver(${d.id})">Guardar</button>
+        <button class="btn-add" id="driver-edit-btn-${d.id}" style="padding:6px 12px;font-size:12px;background:transparent;border:1px solid var(--border);color:var(--text);" onclick="startEditDriver(${d.id})">Editar</button>
+        <button class="btn-remove" onclick="removeDriver(${d.id})">Remover</button>
+      </div>
     </div>`).join('');
+}
+
+function startEditDriver(id) {
+  document.getElementById('driver-view-' + id).style.display = 'none';
+  document.getElementById('driver-edit-' + id).style.display = 'flex';
+  document.getElementById('driver-edit-btn-' + id).style.display = 'none';
+  document.getElementById('driver-save-btn-' + id).style.display = '';
+}
+
+async function saveDriver(id) {
+  const name = document.getElementById('driver-edit-name-' + id).value.trim();
+  const phone = document.getElementById('driver-edit-phone-' + id).value.trim();
+  if (!name) return;
+  const res = await fetch(`${API}?type=drivers`, { method: 'PUT', body: JSON.stringify({ id, name, phone }) });
+  if (!res.ok) { showToast('Erro ao guardar'); return; }
+  await loadAll();
+  showToast('Motorista atualizado ✓');
 }
 
 async function addDriver() {
@@ -511,13 +536,35 @@ function renderVehicles() {
   const el = document.getElementById('vehicles-list');
   if (!vehicles.length) { el.innerHTML = '<div class="empty">Sem viaturas.</div>'; return; }
   el.innerHTML = vehicles.map(v => `
-    <div class="team-list-item">
-      <div>
+    <div class="team-list-item" id="vehicle-row-${v.id}">
+      <div style="flex:1;" id="vehicle-view-${v.id}">
         <div class="team-item-name">${v.name}</div>
-        ${v.plate ? `<div class="team-item-sub">${v.plate}</div>` : ''}
       </div>
-      <button class="btn-remove" onclick="removeVehicle(${v.id})">Remover</button>
+      <div style="flex:1;display:none;gap:8px;" id="vehicle-edit-${v.id}">
+        <input class="add-input" id="vehicle-edit-name-${v.id}" value="${v.name}" style="flex:1;" />
+      </div>
+      <div style="display:flex;gap:6px;flex-shrink:0;">
+        <button class="btn-add" id="vehicle-save-btn-${v.id}" style="display:none;padding:6px 12px;font-size:12px;" onclick="saveVehicle(${v.id})">Guardar</button>
+        <button class="btn-add" id="vehicle-edit-btn-${v.id}" style="padding:6px 12px;font-size:12px;background:transparent;border:1px solid var(--border);color:var(--text);" onclick="startEditVehicle(${v.id})">Editar</button>
+        <button class="btn-remove" onclick="removeVehicle(${v.id})">Remover</button>
+      </div>
     </div>`).join('');
+}
+
+function startEditVehicle(id) {
+  document.getElementById('vehicle-view-' + id).style.display = 'none';
+  document.getElementById('vehicle-edit-' + id).style.display = 'flex';
+  document.getElementById('vehicle-edit-btn-' + id).style.display = 'none';
+  document.getElementById('vehicle-save-btn-' + id).style.display = '';
+}
+
+async function saveVehicle(id) {
+  const name = document.getElementById('vehicle-edit-name-' + id).value.trim();
+  if (!name) return;
+  const res = await fetch(`${API}?type=vehicles`, { method: 'PUT', body: JSON.stringify({ id, name }) });
+  if (!res.ok) { showToast('Erro ao guardar'); return; }
+  await loadAll();
+  showToast('Viatura atualizada ✓');
 }
 
 async function addVehicle() {
