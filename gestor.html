@@ -7,7 +7,7 @@
 <title>Vianta — Gestão de Frota</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=DM+Sans:wght@300;400;500&family=DM+Mono&display=swap" rel="stylesheet" />
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>/* supabase removed */</script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -333,9 +333,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const SUPABASE_URL = 'https://bcnhtghlnabvxpnfwlfa.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJjbmh0Z2hsbmFidnhwbmZ3bGZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTAyNjkzMDcsImV4cCI6MjA2NTg0NTMwN30.JDMptWxFpHpvYGaOCFWEnFM5VZ8bZMELsm7xmf3TLnk';
-const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// all data via Netlify Function → Google Sheets
 
 let transfers = [], drivers = [], vehicles = [], currentFilter = 'todos';
 
@@ -378,11 +376,11 @@ const API = '/.netlify/functions/sheets';
 // ── LOAD ─────────────────────────────────────────
 async function loadAll() {
   const [tr, dr, ve] = await Promise.all([
-    db.from('transfers').select('*').order('date', { ascending: true }),
+    fetch(`${API}?type=transfers`).then(r => r.json()),
     fetch(`${API}?type=drivers`).then(r => r.json()),
     fetch(`${API}?type=vehicles`).then(r => r.json()),
   ]);
-  if (tr.data) transfers = tr.data;
+  transfers = Array.isArray(tr) ? tr : [];
   drivers = Array.isArray(dr) ? dr : [];
   vehicles = Array.isArray(ve) ? ve : [];
   renderTransfers();
@@ -462,13 +460,12 @@ async function saveTransfer(id) {
   const vehicleVal = document.getElementById('ve-' + id)?.value || null;
   const statusVal = document.getElementById('st-' + id)?.value;
 
-  const { error } = await db.from('transfers').update({
-    driver: driverVal || null,
-    vehicle: vehicleVal || null,
-    status: statusVal
-  }).eq('id', id);
+  const res = await fetch(`${API}?type=transfers`, {
+    method: 'PUT',
+    body: JSON.stringify({ id, driver: driverVal || '', vehicle: vehicleVal || '', status: statusVal })
+  });
 
-  if (error) { showToast('Erro ao guardar'); return; }
+  if (!res.ok) { showToast('Erro ao guardar'); return; }
   const t = transfers.find(x => String(x.id) === String(id));
   if (t) { t.driver = driverVal; t.vehicle = vehicleVal; t.status = statusVal; }
   const btn = document.getElementById('save-' + id);

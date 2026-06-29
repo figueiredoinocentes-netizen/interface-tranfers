@@ -1,23 +1,24 @@
 const { google } = require('googleapis');
 
 const SHEET_ID = '1fwGueaZ3otmqO1IODXDv7qe3NayQson1ICgnQHBJc0E';
-const DRIVERS_SHEET = 'Motoristas';
-const VEHICLES_SHEET = 'Viaturas';
+
+const SHEETS = {
+  transfers: { name: 'Transfers', headers: ['id','hotel','dir','name','adults','children','luggage','child_seat','payment','date','time','flight','arrival','notes','status','driver','vehicle','created_at'] },
+  drivers:   { name: 'Motoristas', headers: ['id','name','phone','active'] },
+  vehicles:  { name: 'Viaturas',   headers: ['id','name','active'] },
+};
 
 function getAuth() {
   const creds = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT);
-  return new google.auth.GoogleAuth({
-    credentials: creds,
-    scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-  });
+  return new google.auth.GoogleAuth({ credentials: creds, scopes: ['https://www.googleapis.com/auth/spreadsheets'] });
 }
 
-async function getSheets() {
+async function getSheetsClient() {
   const auth = getAuth();
   return google.sheets({ version: 'v4', auth });
 }
 
-function corsHeaders() {
+function cors() {
   return {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type',
@@ -26,95 +27,152 @@ function corsHeaders() {
   };
 }
 
-async function ensureSheet(sheets, name, headers) {
+function ok(data) { return { statusCode: 200, headers: cors(), body: JSON.stringify(data) }; }
+function err(msg, code = 500) { return { statusCode: code, headers: cors(), body: JSON.stringify({ error: msg }) }; }
+
+async function ensureSheet(sheets, type) {
+  const cfg = SHEETS[type];
   const meta = await sheets.spreadsheets.get({ spreadsheetId: SHEET_ID });
-  const exists = meta.data.sheets.some(s => s.properties.title === name);
+  const exists = meta.data.sheets.some(s => s.properties.title === cfg.name);
   if (!exists) {
     await sheets.spreadsheets.batchUpdate({
       spreadsheetId: SHEET_ID,
-      requestBody: { requests: [{ addSheet: { properties: { title: name } } }] },
+      requestBody: { requests: [{ addSheet: { properties: { title: cfg.name } } }] },
     });
     await sheets.spreadsheets.values.update({
       spreadsheetId: SHEET_ID,
-      range: `${name}!A1`,
+      range: `${cfg.name}!A1`,
       valueInputOption: 'RAW',
-      requestBody: { values: [headers] },
+      requestBody: { values: [cfg.headers] },
     });
   }
 }
 
+async function getRows(sheets, type) {
+  const cfg = SHEETS[type];
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId: SHEET_ID,
+    range: `${cfg.name}!A2:Z`,
+  });
+  const rows = res.data.values || [];
+  return rows.map(row => Object.fromEntries(cfg.headers.map((h, i) => [h, row[i] ?? ''])));
+}
+
 exports.handler = async (event) => {
-  if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 200, headers: corsHeaders(), body: '' };
-  }
+  if (event.httpMethod === 'OPTIONS') return { statusCode: 200, headers: cors(), body: '' };
+
+  const params = event.queryStringParameters || {};
+  const type = params.type; // transfers | drivers | vehicles
+  if (!SHEETS[type]) return err('Invalid type', 400);
+
+  let body = {};
+  try { if (event.body) body = JSON.parse(event.body); } catch (_) {}
 
   try {
-    const sheets = await getSheets();
-    const params = event.queryStringParameters || {};
-    const body = event.body ? JSON.parse(event.body) : {};
-    const type = params.type; // 'drivers' or 'vehicles'
-    const sheetName = type === 'drivers' ? DRIVERS_SHEET : VEHICLES_SHEET;
+    const sheets = await getSheetsClient();
+    await ensureSheet(sheets, type);
+    const cfg = SHEETS[type];
 
-    // GET — list all active
+    // GET
     if (event.httpMethod === 'GET') {
-      if (type === 'drivers') await ensureSheet(sheets, DRIVERS_SHEET, ['id', 'name', 'phone', 'active']);
-      else await ensureSheet(sheets, VEHICLES_SHEET, ['id', 'name', 'active']);
-
-      const res = await sheets.spreadsheets.values.get({
-        spreadsheetId: SHEET_ID,
-        range: `${sheetName}!A2:Z`,
-      });
-      const rows = res.data.values || [];
-      const headers = type === 'drivers' ? ['id', 'name', 'phone', 'active'] : ['id', 'name', 'active'];
-      const items = rows
-        .map(row => Object.fromEntries(headers.map((h, i) => [h, row[i] ?? ''])))
-        .filter(r => r.active !== 'false' && r.id);
-      return { statusCode: 200, headers: corsHeaders(), body: JSON.stringify(items) };
+      const rows = await getRows(sheets, type);
+      const active = type === 'transfers'
+        ? rows.filter(r => r.id)
+        : rows.filter(r => r.active !== 'false' && r.id);
+      // sort transfers by date desc
+      if (type === 'transfers') active.sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
+      return ok(active);
     }
 
-    // POST — add new
+    // POST — create
     if (event.httpMethod === 'POST') {
-      const res = await sheets.spreadsheets.values.get({
-        spreadsheetId: SHEET_ID, range: `${sheetName}!A2:A`,
-      });
-      const rows = res.data.values || [];
-      const newId = rows.length > 0 ? Math.max(...rows.map(r => parseInt(r[0]) || 0)) + 1 : 1;
-      const newRow = type === 'drivers'
-        ? [newId, body.name, body.phone || '', 'true']
-        : [newId, body.name, 'true'];
+      const existingRows = await getRows(sheets, type);
+      let newId;
+      if (type === 'transfers') {
+        newId = body.id || String(Date.now());
+      } else {
+        const ids = existingRows.map(r => parseInt(r.id) || 0);
+        newId = ids.length > 0 ? Math.max(...ids) + 1 : 1;
+      }
+
+      let newRow;
+      if (type === 'transfers') {
+        newRow = cfg.headers.map(h => body[h] ?? '');
+        newRow[cfg.headers.indexOf('id')] = newId;
+        newRow[cfg.headers.indexOf('created_at')] = new Date().toISOString();
+        if (!body.status) newRow[cfg.headers.indexOf('status')] = 'pendente';
+      } else if (type === 'drivers') {
+        newRow = [newId, body.name || '', body.phone || '', 'true'];
+      } else {
+        newRow = [newId, body.name || '', 'true'];
+      }
 
       await sheets.spreadsheets.values.append({
         spreadsheetId: SHEET_ID,
-        range: `${sheetName}!A1`,
+        range: `${cfg.name}!A1`,
         valueInputOption: 'RAW',
         requestBody: { values: [newRow] },
       });
-      return { statusCode: 200, headers: corsHeaders(), body: JSON.stringify({ ok: true, id: newId }) };
+      return ok({ ok: true, id: newId });
     }
 
-    // DELETE — mark inactive
-    if (event.httpMethod === 'DELETE') {
+    // PUT — update transfer (status, driver, vehicle, or full edit)
+    if (event.httpMethod === 'PUT') {
       const id = String(body.id);
-      const res = await sheets.spreadsheets.values.get({
-        spreadsheetId: SHEET_ID, range: `${sheetName}!A2:Z`,
-      });
+      const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${cfg.name}!A2:Z` });
       const rows = res.data.values || [];
       const rowIndex = rows.findIndex(r => String(r[0]) === id);
-      if (rowIndex === -1) return { statusCode: 404, headers: corsHeaders(), body: JSON.stringify({ error: 'Not found' }) };
+      if (rowIndex === -1) return err('Not found', 404);
 
-      const activeCol = type === 'drivers' ? 'D' : 'C';
-      await sheets.spreadsheets.values.update({
-        spreadsheetId: SHEET_ID,
-        range: `${sheetName}!${activeCol}${rowIndex + 2}`,
-        valueInputOption: 'RAW',
-        requestBody: { values: [['false']] },
-      });
-      return { statusCode: 200, headers: corsHeaders(), body: JSON.stringify({ ok: true }) };
+      const sheetRow = rowIndex + 2;
+      const updatableFields = type === 'transfers'
+        ? ['hotel','dir','name','adults','children','luggage','child_seat','payment','date','time','flight','arrival','notes','status','driver','vehicle']
+        : ['name','phone','active'];
+
+      for (const field of updatableFields) {
+        if (body[field] !== undefined) {
+          const colIndex = cfg.headers.indexOf(field);
+          if (colIndex === -1) continue;
+          const col = String.fromCharCode(65 + colIndex);
+          await sheets.spreadsheets.values.update({
+            spreadsheetId: SHEET_ID,
+            range: `${cfg.name}!${col}${sheetRow}`,
+            valueInputOption: 'RAW',
+            requestBody: { values: [[body[field]]] },
+          });
+        }
+      }
+      return ok({ ok: true });
     }
 
-    return { statusCode: 405, headers: corsHeaders(), body: JSON.stringify({ error: 'Method not allowed' }) };
-  } catch (err) {
-    console.error(err);
-    return { statusCode: 500, headers: corsHeaders(), body: JSON.stringify({ error: err.message }) };
+    // DELETE — mark inactive (drivers/vehicles) or status=cancelado (transfers)
+    if (event.httpMethod === 'DELETE') {
+      const id = String(body.id);
+      const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${cfg.name}!A2:Z` });
+      const rows = res.data.values || [];
+      const rowIndex = rows.findIndex(r => String(r[0]) === id);
+      if (rowIndex === -1) return err('Not found', 404);
+
+      const sheetRow = rowIndex + 2;
+      if (type === 'transfers') {
+        const col = String.fromCharCode(65 + cfg.headers.indexOf('status'));
+        await sheets.spreadsheets.values.update({
+          spreadsheetId: SHEET_ID, range: `${cfg.name}!${col}${sheetRow}`,
+          valueInputOption: 'RAW', requestBody: { values: [['cancelado']] },
+        });
+      } else {
+        const col = String.fromCharCode(65 + cfg.headers.indexOf('active'));
+        await sheets.spreadsheets.values.update({
+          spreadsheetId: SHEET_ID, range: `${cfg.name}!${col}${sheetRow}`,
+          valueInputOption: 'RAW', requestBody: { values: [['false']] },
+        });
+      }
+      return ok({ ok: true });
+    }
+
+    return err('Method not allowed', 405);
+  } catch (e) {
+    console.error(e);
+    return err(e.message);
   }
 };
