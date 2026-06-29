@@ -896,7 +896,7 @@ function renderPanel() {
       '<div id="view-' + t.id + '">' +
         '<div class="card-details">' +
           '<div>📅 <strong>' + fmtDate(t.date) + '</strong> às <strong>' + fmtTime(t.time) + '</strong></div>' +
-          '<div>👥 <strong>' + t.adults + '</strong> adulto' + (t.adults != 1 ? 's' : '') + (t.children > 0 ? ' + <strong>' + t.children + '</strong> criança' + (t.children != 1 ? 's' : '') : '') + '</div>' +
+          '<div>👥 <strong>' + parseInt(t.adults) + '</strong> adulto' + (parseInt(t.adults) != 1 ? 's' : '') + (parseInt(t.children) > 0 ? ' + <strong>' + parseInt(t.children) + '</strong> criança' + (parseInt(t.children) != 1 ? 's' : '') : '') + '</div>' +
           (t.luggage > 0 ? '<div>🧳 <strong>' + t.luggage + '</strong> bagagem' + (t.luggage != 1 ? 's' : '') + '</div>' : '') +
           '<div>💳 ' + (t.payment === 'driver' ? 'Pag. motorista' : 'Pag. hotel') + '</div>' +
           (t.flight ? '<div>✈️ Voo <strong>' + t.flight + '</strong>' + (t.arrival ? ' — chegada <strong>' + fmtTime(t.arrival) + '</strong>' : '') + '</div>' : '') +

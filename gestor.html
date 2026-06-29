@@ -417,7 +417,7 @@ function renderTransfers() {
         <div>${t.flight || '—'}</div>
         ${t.arrival ? `<div class="cell-sub">cheg. ${fmtTime(t.arrival)}</div>` : ''}
       </td>
-      <td>${(t.adults||0) + (t.children||0)} pax</td>
+      <td>${(parseInt(t.adults)||0) + (parseInt(t.children)||0)} pax</td>
       <td>
         <select class="inline-select" id="dr-${t.id}" onchange="markDirty('${t.id}')">
           <option value="">— motorista —</option>
