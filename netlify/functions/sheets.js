@@ -145,7 +145,7 @@ exports.handler = async (event) => {
       return ok({ ok: true });
     }
 
-    // DELETE — mark inactive (drivers/vehicles) or status=cancelado (transfers)
+    // DELETE — hard delete row (drivers/vehicles) or status=cancelado (transfers)
     if (event.httpMethod === 'DELETE') {
       const id = String(body.id);
       const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${cfg.name}!A2:Z` });
@@ -155,16 +155,27 @@ exports.handler = async (event) => {
 
       const sheetRow = rowIndex + 2;
       if (type === 'transfers') {
+        // soft delete — keep row but mark as cancelado
         const col = String.fromCharCode(65 + cfg.headers.indexOf('status'));
         await sheets.spreadsheets.values.update({
           spreadsheetId: SHEET_ID, range: `${cfg.name}!${col}${sheetRow}`,
           valueInputOption: 'RAW', requestBody: { values: [['cancelado']] },
         });
       } else {
-        const col = String.fromCharCode(65 + cfg.headers.indexOf('active'));
-        await sheets.spreadsheets.values.update({
-          spreadsheetId: SHEET_ID, range: `${cfg.name}!${col}${sheetRow}`,
-          valueInputOption: 'RAW', requestBody: { values: [['false']] },
+        // hard delete — get sheet tab ID and delete the row entirely
+        const meta = await sheets.spreadsheets.get({ spreadsheetId: SHEET_ID });
+        const tab = meta.data.sheets.find(s => s.properties.title === cfg.name);
+        if (!tab) return err('Sheet tab not found', 404);
+        const sheetId = tab.properties.sheetId;
+        await sheets.spreadsheets.batchUpdate({
+          spreadsheetId: SHEET_ID,
+          requestBody: {
+            requests: [{
+              deleteDimension: {
+                range: { sheetId, dimension: 'ROWS', startIndex: sheetRow - 1, endIndex: sheetRow }
+              }
+            }]
+          }
         });
       }
       return ok({ ok: true });
