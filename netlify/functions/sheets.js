@@ -2,6 +2,39 @@ const { google } = require('googleapis');
 
 const SHEET_ID = '1fwGueaZ3otmqO1IODXDv7qe3NayQson1ICgnQHBJc0E';
 
+async function sendTransferEmail(data, id) {
+  const apiKey = process.env.RESEND_API_KEY;
+  const to = process.env.MANAGER_EMAIL;
+  if (!apiKey || !to) return;
+
+  const lines = [
+    `<b>Novo transfer recebido</b>`,
+    ``,
+    `<b>Hotel:</b> ${data.hotel || '—'}`,
+    `<b>Cliente:</b> ${data.name || '—'}`,
+    `<b>Data:</b> ${data.date || '—'} ${data.time || ''}`,
+    `<b>Direção:</b> ${data.dir === 'chegada' ? 'Chegada ao hotel' : 'Partida do hotel'}`,
+    `<b>Adults:</b> ${data.adults || '0'} | <b>Crianças:</b> ${data.children || '0'}`,
+    `<b>Bagagem:</b> ${data.luggage || '0'}`,
+    `<b>Voo:</b> ${data.flight || '—'} | <b>Chegada:</b> ${data.arrival || '—'}`,
+    `<b>Pagamento:</b> ${data.payment || '—'}`,
+    data.notes ? `<b>Notas:</b> ${data.notes}` : '',
+    ``,
+    `<a href="https://vianta-transfers.netlify.app/gestor.html">Abrir gestor →</a>`,
+  ].filter(l => l !== null).join('<br>');
+
+  await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      from: 'Vianta Transfers <onboarding@resend.dev>',
+      to: [to],
+      subject: `Novo transfer — ${data.hotel || ''} ${data.date || ''}`,
+      html: `<div style="font-family:sans-serif;font-size:14px;line-height:1.6">${lines}</div>`,
+    }),
+  });
+}
+
 const SHEETS = {
   transfers: { name: 'Transfers', headers: ['id','hotel','dir','name','adults','children','luggage','child_seat','payment','date','time','flight','arrival','notes','status','driver','vehicle','created_at'] },
   drivers:   { name: 'Motoristas', headers: ['id','name','phone','active'] },
@@ -113,6 +146,11 @@ exports.handler = async (event) => {
         valueInputOption: 'RAW',
         requestBody: { values: [newRow] },
       });
+
+      if (type === 'transfers') {
+        await sendTransferEmail(body, newId).catch(e => console.error('Email error:', e));
+      }
+
       return ok({ ok: true, id: newId });
     }
 
