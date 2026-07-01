@@ -18,6 +18,7 @@ async function sendTransferEmail(data, id) {
     `<b>Bagagem:</b> ${data.luggage || '0'}`,
     `<b>Voo:</b> ${data.flight || '—'} | <b>Chegada:</b> ${data.arrival || '—'}`,
     `<b>Pagamento:</b> ${data.payment || '—'}`,
+    data.child_seat && data.child_ages ? `<b>Idade(s) da(s) criança(s):</b> ${data.child_ages}` : '',
     data.notes ? `<b>Notas:</b> ${data.notes}` : '',
     ``,
     `<a href="https://vianta-transfers.netlify.app/gestor.html">Abrir gestor →</a>`,
@@ -36,7 +37,7 @@ async function sendTransferEmail(data, id) {
 }
 
 const SHEETS = {
-  transfers: { name: 'Transfers', headers: ['id','hotel','dir','name','adults','children','luggage','child_seat','payment','date','time','flight','arrival','notes','status','driver','vehicle','car_type','partner_id','created_at'] },
+  transfers: { name: 'Transfers', headers: ['id','hotel','dir','name','adults','children','luggage','child_seat','payment','date','time','flight','arrival','notes','status','driver','vehicle','car_type','partner_id','created_at','child_ages'] },
   drivers:   { name: 'Motoristas', headers: ['id','name','phone','active'] },
   vehicles:  { name: 'Viaturas',   headers: ['id','name','active'] },
   partners:  { name: 'Parceiros',  headers: ['id','slug','name'] },
@@ -167,7 +168,7 @@ exports.handler = async (event) => {
 
       const sheetRow = rowIndex + 2;
       const updatableFields = type === 'transfers'
-        ? ['hotel','dir','name','adults','children','luggage','child_seat','payment','date','time','flight','arrival','notes','status','driver','vehicle','car_type']
+        ? ['hotel','dir','name','adults','children','luggage','child_seat','payment','date','time','flight','arrival','notes','status','driver','vehicle','car_type','child_ages']
         : ['name','phone','active'];
 
       for (const field of updatableFields) {

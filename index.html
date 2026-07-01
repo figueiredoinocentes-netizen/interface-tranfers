@@ -631,7 +631,7 @@
       </div>
       <div class="form-group" style="margin:0;">
         <label>Nº de crianças</label>
-        <input type="number" id="f-children" min="0" max="8" placeholder="0" oninput="autoCarType()" />
+        <input type="number" id="f-children" min="0" max="8" placeholder="0" oninput="autoCarType(); toggleChildAges();" />
       </div>
     </div>
     <div class="form-row" style="margin-top:10px;">
@@ -642,8 +642,12 @@
       <div></div>
     </div>
     <div class="checkbox-row" onclick="document.getElementById('f-child-seat').click()">
-      <input type="checkbox" id="f-child-seat" onclick="event.stopPropagation()" />
+      <input type="checkbox" id="f-child-seat" onclick="event.stopPropagation()" oninput="toggleChildAges()" />
       <label for="f-child-seat">Precisa de cadeirinha de criança</label>
+    </div>
+    <div id="child-ages-wrap" style="display:none;margin-top:10px;">
+      <div class="section-label" style="margin-top:0;">Idade da(s) criança(s) <span class="req">*</span></div>
+      <div id="child-ages-inputs" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
     </div>
 
     <div class="section-label">Horário</div>
@@ -788,6 +792,29 @@ function setPayment(p) {
   document.getElementById('btn-pay-hotel').classList.toggle('selected', p === 'hotel');
 }
 
+function toggleChildAges() {
+  const checked = document.getElementById('f-child-seat').checked;
+  const wrap = document.getElementById('child-ages-wrap');
+  const inputsEl = document.getElementById('child-ages-inputs');
+  wrap.style.display = checked ? 'block' : 'none';
+  if (!checked) { inputsEl.innerHTML = ''; return; }
+
+  const count = Math.max(1, parseInt(document.getElementById('f-children').value) || 0);
+  const existing = Array.from(inputsEl.querySelectorAll('input')).map(i => i.value);
+  inputsEl.innerHTML = '';
+  for (let i = 0; i < count; i++) {
+    const input = document.createElement('input');
+    input.type = 'number';
+    input.min = '0';
+    input.max = '17';
+    input.placeholder = 'Idade';
+    input.className = 'child-age-input';
+    input.style.width = '80px';
+    input.value = existing[i] || '';
+    inputsEl.appendChild(input);
+  }
+}
+
 function autoCarType() {
   const adults = parseInt(document.getElementById('f-adults').value) || 0;
   const children = parseInt(document.getElementById('f-children').value) || 0;
@@ -817,6 +844,17 @@ async function submitTransfer() {
     return;
   }
 
+  const childSeat = document.getElementById('f-child-seat').checked;
+  let childAges = [];
+  if (childSeat) {
+    const ageInputs = Array.from(document.querySelectorAll('#child-ages-inputs .child-age-input'));
+    childAges = ageInputs.map(i => i.value.trim());
+    if (childAges.some(a => a === '')) {
+      alert('Por favor indica a idade de todas as crianças que precisam de cadeirinha.');
+      return;
+    }
+  }
+
   const btn = document.querySelector('.btn-submit');
   btn.textContent = 'A enviar…';
   btn.disabled = true;
@@ -827,7 +865,8 @@ async function submitTransfer() {
     adults: parseInt(adults) || 0,
     children: parseInt(document.getElementById('f-children').value) || 0,
     luggage: parseInt(document.getElementById('f-luggage').value) || 0,
-    child_seat: document.getElementById('f-child-seat').checked,
+    child_seat: childSeat,
+    child_ages: childAges.join(','),
     payment,
     car_type: carType,
     date, time,
@@ -842,6 +881,7 @@ async function submitTransfer() {
 
   ['f-name','f-adults','f-children','f-luggage','f-date','f-time','f-flight','f-arrival','f-notes'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('f-child-seat').checked = false;
+  toggleChildAges();
   setDir('h2a');
   setPayment('driver');
   setCarType('sedan');
@@ -948,6 +988,7 @@ function renderPanel() {
           (t.luggage > 0 ? '<div>🧳 <strong>' + t.luggage + '</strong> bagagem' + (t.luggage != 1 ? 's' : '') + '</div>' : '') +
           '<div>💳 ' + (t.payment === 'driver' ? 'Pag. motorista' : 'Pag. hotel') + '</div>' +
           '<div>' + (t.car_type === 'van' ? '🚐 Van' : '🚗 Sedan') + '</div>' +
+          (t.child_seat && t.child_ages ? '<div style="grid-column:1/-1">🪑 Idade(s) da(s) criança(s): <strong>' + t.child_ages + '</strong></div>' : '') +
           (t.flight ? '<div>✈️ Voo <strong>' + t.flight + '</strong>' + (t.arrival ? ' — chegada <strong>' + fmtTime(t.arrival) + '</strong>' : '') + '</div>' : '') +
           (t.notes ? '<div style="grid-column:1/-1">📝 ' + t.notes + '</div>' : '') +
           ((!pending && t.driver) ? '<div style="grid-column:1/-1">🚗 Motorista: <strong>' + t.driver + '</strong></div>' : '') +
