@@ -627,11 +627,11 @@
     <div class="form-row">
       <div class="form-group" style="margin:0;">
         <label>Nº de adultos <span class="req">*</span></label>
-        <input type="number" id="f-adults" min="0" max="8" placeholder="1" />
+        <input type="number" id="f-adults" min="0" max="8" placeholder="1" oninput="autoCarType()" />
       </div>
       <div class="form-group" style="margin:0;">
         <label>Nº de crianças</label>
-        <input type="number" id="f-children" min="0" max="8" placeholder="0" />
+        <input type="number" id="f-children" min="0" max="8" placeholder="0" oninput="autoCarType()" />
       </div>
     </div>
     <div class="form-row" style="margin-top:10px;">
@@ -785,6 +785,12 @@ function setPayment(p) {
   payment = p;
   document.getElementById('btn-pay-driver').classList.toggle('selected', p === 'driver');
   document.getElementById('btn-pay-hotel').classList.toggle('selected', p === 'hotel');
+}
+
+function autoCarType() {
+  const adults = parseInt(document.getElementById('f-adults').value) || 0;
+  const children = parseInt(document.getElementById('f-children').value) || 0;
+  setCarType(adults + children > 2 ? 'van' : 'sedan');
 }
 
 function setCarType(c) {
