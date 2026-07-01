@@ -965,7 +965,9 @@ function renderPanel() {
     return;
   }
 
-  list.innerHTML = transfers.map(t => {
+  const sorted = [...transfers].sort((a, b) => `${b.date} ${b.time}`.localeCompare(`${a.date} ${a.time}`));
+
+  list.innerHTML = sorted.map(t => {
     const childTag = t.child_seat ? '<span class="tag tag-child">cadeirinha</span>' : '';
     const payTag = t.payment === 'hotel' ? '<span class="tag tag-hotel">pag. hotel</span>' : '';
     const dirIcon = t.dir === 'h2a' ? '🏨 → ✈️' : '✈️ → 🏨';
