@@ -358,8 +358,8 @@
     <div class="add-form" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:10px;">
       <div style="font-size:12px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);">Novo parceiro</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <input class="add-input" id="new-partner-name" placeholder="Nome do hotel (ex. Penha Longa)" style="flex:1;min-width:180px;" />
-        <input class="add-input" id="new-partner-slug" placeholder="Slug URL (ex. penha-longa)" style="flex:1;min-width:150px;" />
+        <input class="add-input" id="new-partner-name" placeholder="Nome do hotel (ex. Penha Longa)" style="flex:1;min-width:180px;" oninput="autoSlug(this.value)" />
+        <input class="add-input" id="new-partner-slug" placeholder="slug-automatico" style="flex:1;min-width:150px;" />
         <button class="btn-add" onclick="addPartner()">Adicionar</button>
       </div>
       <div style="font-size:11px;color:var(--muted);">O slug define o link: <code style="background:var(--bg);padding:2px 5px;border-radius:4px;">/?hotel=slug</code></div>
@@ -510,6 +510,14 @@ function copyLink(slug) {
     btn.textContent = '✓ Copiado!';
     setTimeout(() => { btn.textContent = 'Copiar link'; }, 2000);
   });
+}
+
+function autoSlug(name) {
+  const slug = name.toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '') // remove acentos
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim().replace(/\s+/g, '-');
+  document.getElementById('new-partner-slug').value = slug;
 }
 
 async function addPartner() {
