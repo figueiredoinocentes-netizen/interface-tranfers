@@ -722,7 +722,7 @@
 <script>/* supabase removed */</script>
 <script>
 const API = '/.netlify/functions/sheets';
-const _slug = new URLSearchParams(location.search).get('hotel') || 'onyria';
+const _slug = new URLSearchParams(location.search).get('parceiro') || new URLSearchParams(location.search).get('hotel') || 'onyria';
 let HOTEL = _slug; // placeholder until API responds
 
 async function initHotelName() {
