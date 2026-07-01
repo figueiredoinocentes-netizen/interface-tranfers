@@ -721,17 +721,20 @@
 
 <script>/* supabase removed */</script>
 <script>
-const HOTELS = {
-  'onyria':       'Onyria',
-  'penha-longa':  'Penha Longa',
-  'bairro-alto':  'Bairro Alto Hotel',
-  'four-seasons': 'Four Seasons',
-  // adicionar novos parceiros aqui
-};
-
-const _slug = new URLSearchParams(location.search).get('hotel') || 'onyria';
-const HOTEL = HOTELS[_slug] || 'Onyria';
 const API = '/.netlify/functions/sheets';
+const _slug = new URLSearchParams(location.search).get('hotel') || 'onyria';
+let HOTEL = _slug; // placeholder until API responds
+
+async function initHotelName() {
+  try {
+    const res = await fetch(`${API}?type=partners`);
+    const partners = await res.json();
+    const match = Array.isArray(partners) && partners.find(p => p.slug === _slug);
+    HOTEL = match ? match.name : _slug;
+  } catch (_) {}
+  document.getElementById('header-hotel-name').textContent = HOTEL;
+  setDir(dir); // refresh route text with real name
+}
 
 let dir = 'h2a';
 let payment = 'driver';
@@ -1035,9 +1038,9 @@ async function saveEdit(id) {
   renderPanel();
 }
 
-// Set hotel name in static elements on page load
+// Set hotel name in static elements on page load (updated async by initHotelName)
 document.getElementById('header-hotel-name').textContent = HOTEL;
-document.getElementById('route-hotel-name').textContent = HOTEL;
+initHotelName();
 
 function toClipboard(id) {
   const el = document.getElementById('copy-' + id);

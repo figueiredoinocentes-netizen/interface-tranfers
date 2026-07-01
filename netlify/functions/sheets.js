@@ -39,6 +39,7 @@ const SHEETS = {
   transfers: { name: 'Transfers', headers: ['id','hotel','dir','name','adults','children','luggage','child_seat','payment','car_type','date','time','flight','arrival','notes','status','driver','vehicle','created_at'] },
   drivers:   { name: 'Motoristas', headers: ['id','name','phone','active'] },
   vehicles:  { name: 'Viaturas',   headers: ['id','name','active'] },
+  partners:  { name: 'Parceiros',  headers: ['id','slug','name'] },
 };
 
 function getAuth() {
@@ -136,8 +137,10 @@ exports.handler = async (event) => {
         if (!body.status) newRow[cfg.headers.indexOf('status')] = 'pendente';
       } else if (type === 'drivers') {
         newRow = [newId, body.name || '', body.phone || '', 'true'];
-      } else {
+      } else if (type === 'vehicles') {
         newRow = [newId, body.name || '', 'true'];
+      } else if (type === 'partners') {
+        newRow = [newId, body.slug || '', body.name || ''];
       }
 
       await sheets.spreadsheets.values.append({
