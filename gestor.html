@@ -274,6 +274,7 @@
             <th>Percurso</th>
             <th>Voo</th>
             <th>Pax</th>
+            <th>Veículo</th>
             <th>Motorista</th>
             <th>Viatura</th>
             <th>Estado</th>
@@ -488,6 +489,7 @@ function renderTransfers() {
         ${t.arrival ? `<div class="cell-sub">cheg. ${fmtTime(t.arrival)}</div>` : ''}
       </td>
       <td>${(parseInt(t.adults)||0) + (parseInt(t.children)||0)} pax</td>
+      <td>${t.car_type === 'van' ? '🚐 Van' : '🚗 Sedan'}</td>
       <td>
         <select class="inline-select" id="dr-${t.id}" onchange="markDirty('${t.id}')">
           <option value="">— motorista —</option>

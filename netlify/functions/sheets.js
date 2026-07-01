@@ -36,7 +36,7 @@ async function sendTransferEmail(data, id) {
 }
 
 const SHEETS = {
-  transfers: { name: 'Transfers', headers: ['id','hotel','dir','name','adults','children','luggage','child_seat','payment','date','time','flight','arrival','notes','status','driver','vehicle','created_at'] },
+  transfers: { name: 'Transfers', headers: ['id','hotel','dir','name','adults','children','luggage','child_seat','payment','car_type','date','time','flight','arrival','notes','status','driver','vehicle','created_at'] },
   drivers:   { name: 'Motoristas', headers: ['id','name','phone','active'] },
   vehicles:  { name: 'Viaturas',   headers: ['id','name','active'] },
 };

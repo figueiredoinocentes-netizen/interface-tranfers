@@ -658,6 +658,18 @@
       </div>
     </div>
 
+    <div class="section-label">Tipo de veículo</div>
+    <div class="dir-toggle">
+      <button class="dir-btn selected" id="btn-sedan" onclick="setCarType('sedan')">
+        <span class="dir-icon">🚗</span>
+        <span class="dir-label">Sedan</span>
+      </button>
+      <button class="dir-btn" id="btn-van" onclick="setCarType('van')">
+        <span class="dir-icon">🚐</span>
+        <span class="dir-label">Van</span>
+      </button>
+    </div>
+
     <div class="section-label">Pagamento</div>
     <div class="dir-toggle">
       <button class="dir-btn selected" id="btn-pay-driver" onclick="setPayment('driver')">
@@ -714,6 +726,7 @@ const API = '/.netlify/functions/sheets';
 
 let dir = 'h2a';
 let payment = 'driver';
+let carType = 'sedan';
 let transfers = [];
 
 // ── Sheets API ─────────────────────────────────────────────────
@@ -762,6 +775,12 @@ function setPayment(p) {
   document.getElementById('btn-pay-hotel').classList.toggle('selected', p === 'hotel');
 }
 
+function setCarType(c) {
+  carType = c;
+  document.getElementById('btn-sedan').classList.toggle('selected', c === 'sedan');
+  document.getElementById('btn-van').classList.toggle('selected', c === 'van');
+}
+
 // ── Submit form ────────────────────────────────────────────────
 
 async function submitTransfer() {
@@ -791,6 +810,7 @@ async function submitTransfer() {
     luggage: parseInt(document.getElementById('f-luggage').value) || 0,
     child_seat: document.getElementById('f-child-seat').checked,
     payment,
+    car_type: carType,
     date, time,
     flight: document.getElementById('f-flight').value.trim(),
     arrival: document.getElementById('f-arrival').value,
@@ -804,6 +824,7 @@ async function submitTransfer() {
   document.getElementById('f-child-seat').checked = false;
   setDir('h2a');
   setPayment('driver');
+  setCarType('sedan');
 
   btn.textContent = 'Enviar pedido';
   btn.disabled = false;
@@ -899,6 +920,7 @@ function renderPanel() {
           '<div>👥 <strong>' + parseInt(t.adults) + '</strong> adulto' + (parseInt(t.adults) != 1 ? 's' : '') + (parseInt(t.children) > 0 ? ' + <strong>' + parseInt(t.children) + '</strong> criança' + (parseInt(t.children) != 1 ? 's' : '') : '') + '</div>' +
           (t.luggage > 0 ? '<div>🧳 <strong>' + t.luggage + '</strong> bagagem' + (t.luggage != 1 ? 's' : '') + '</div>' : '') +
           '<div>💳 ' + (t.payment === 'driver' ? 'Pag. motorista' : 'Pag. hotel') + '</div>' +
+          '<div>' + (t.car_type === 'van' ? '🚐 Van' : '🚗 Sedan') + '</div>' +
           (t.flight ? '<div>✈️ Voo <strong>' + t.flight + '</strong>' + (t.arrival ? ' — chegada <strong>' + fmtTime(t.arrival) + '</strong>' : '') + '</div>' : '') +
           (t.notes ? '<div style="grid-column:1/-1">📝 ' + t.notes + '</div>' : '') +
           ((!pending && t.driver) ? '<div style="grid-column:1/-1">🚗 Motorista: <strong>' + t.driver + '</strong></div>' : '') +
