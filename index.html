@@ -857,7 +857,12 @@ async function submitTransfer() {
 async function loadPanel() {
   const list = document.getElementById('transfers-list');
   list.innerHTML = '<div class="empty"><span class="empty-icon">⏳</span>A carregar…</div>';
-  transfers = await apiGet();
+  const all = await apiGet();
+  // filter to only show transfers belonging to this partner
+  transfers = all.filter(t => {
+    const tSlug = (t.hotel || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9\s-]/g, '').trim().replace(/\s+/g, '-');
+    return tSlug === _slug || t.hotel === HOTEL;
+  });
   renderPanel();
 }
 
