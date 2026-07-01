@@ -167,7 +167,7 @@ exports.handler = async (event) => {
 
       const sheetRow = rowIndex + 2;
       const updatableFields = type === 'transfers'
-        ? ['hotel','dir','name','adults','children','luggage','child_seat','payment','date','time','flight','arrival','notes','status','driver','vehicle']
+        ? ['hotel','dir','name','adults','children','luggage','child_seat','payment','date','time','flight','arrival','notes','status','driver','vehicle','car_type']
         : ['name','phone','active'];
 
       for (const field of updatableFields) {

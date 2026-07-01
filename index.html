@@ -981,6 +981,7 @@ function renderPanel() {
           '</div>' +
           '<div class="edit-row">' +
             '<div class="edit-group"><label>Pagamento</label><select id="e-payment-' + t.id + '"><option value="driver"' + (t.payment==='driver'?' selected':'') + '>Ao motorista</option><option value="hotel"' + (t.payment==='hotel'?' selected':'') + '>Ao hotel</option></select></div>' +
+            '<div class="edit-group"><label>Veículo</label><select id="e-car-type-' + t.id + '"><option value="sedan"' + (t.car_type!=='van'?' selected':'') + '>Sedan</option><option value="van"' + (t.car_type==='van'?' selected':'') + '>Van</option></select></div>' +
           '</div>' +
           '<div class="edit-row">' +
             '<div class="edit-group" style="grid-column:1/-1"><label>Notas</label><textarea id="e-notes-' + t.id + '">' + (t.notes||'') + '</textarea></div>' +
@@ -1036,6 +1037,7 @@ async function saveEdit(id) {
     flight: document.getElementById('e-flight-' + id).value.trim(),
     arrival: document.getElementById('e-arrival-' + id).value,
     payment: document.getElementById('e-payment-' + id).value,
+    car_type: document.getElementById('e-car-type-' + id).value,
     status: document.getElementById('e-status-' + id).value,
     notes: document.getElementById('e-notes-' + id).value.trim(),
   };
