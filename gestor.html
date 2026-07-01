@@ -366,9 +366,8 @@
     <!-- Adicionar -->
     <div class="team-card" style="padding:20px;">
       <div style="font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:14px;">Novo parceiro</div>
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-        <input class="add-input" id="new-partner-name" placeholder="Nome do hotel" style="flex:2;min-width:180px;" oninput="autoSlug(this.value)" />
-        <input class="add-input" id="new-partner-slug" placeholder="slug-automatico" style="flex:1;min-width:140px;color:var(--muted);" />
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input class="add-input" id="new-partner-name" placeholder="Nome do hotel" style="flex:1;" />
         <button class="btn-add" onclick="addPartner()">Adicionar</button>
       </div>
     </div>
@@ -531,9 +530,9 @@ function autoSlug(name) {
 
 async function addPartner() {
   const name = document.getElementById('new-partner-name').value.trim();
-  const slug = document.getElementById('new-partner-slug').value.trim().toLowerCase().replace(/\s+/g, '-');
-  if (!name || !slug) { showToast('Preenche o nome e o slug'); return; }
-  if (partners.some(p => p.slug === slug)) { showToast('Este slug já existe'); return; }
+  if (!name) { showToast('Preenche o nome do hotel'); return; }
+  const slug = name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9\s-]/g, '').trim().replace(/\s+/g, '-');
+  if (partners.some(p => p.slug === slug)) { showToast('Este parceiro já existe'); return; }
   const res = await fetch(`${API}?type=partners`, { method: 'POST', body: JSON.stringify({ name, slug }) });
   if (!res.ok) { showToast('Erro ao adicionar'); return; }
   document.getElementById('new-partner-name').value = '';
