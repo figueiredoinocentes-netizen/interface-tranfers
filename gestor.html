@@ -260,8 +260,8 @@
   </div>
   <div class="container">
     <div class="filters" id="filters">
-      <button class="filter-btn active" onclick="setFilter('todos', this)">Todos</button>
-      <button class="filter-btn" onclick="setFilter('pendente', this)">Pendentes</button>
+      <button class="filter-btn active" onclick="setFilter('pendente', this)">Pendentes</button>
+      <button class="filter-btn" onclick="setFilter('todos', this)">Todos</button>
       <button class="filter-btn" onclick="setFilter('confirmado', this)">Confirmados</button>
       <button class="filter-btn" onclick="setFilter('concluido', this)">Concluídos</button>
       <button class="filter-btn" onclick="setFilter('cancelado', this)">Cancelados</button>
@@ -383,7 +383,7 @@
 <script>
 // all data via Netlify Function → Google Sheets
 
-let transfers = [], drivers = [], vehicles = [], partners = [], currentFilter = 'todos';
+let transfers = [], drivers = [], vehicles = [], partners = [], currentFilter = 'pendente';
 const BASE_URL = 'https://vianta-transfers.netlify.app';
 
 function fmtDate(d) {
