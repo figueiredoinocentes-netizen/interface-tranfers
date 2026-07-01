@@ -624,6 +624,10 @@
       <label>Nome completo <span class="req">*</span></label>
       <input type="text" id="f-name" placeholder="ex. João Silva" />
     </div>
+    <div class="form-group">
+      <label id="phone-label">Telemóvel do cliente</label>
+      <input type="tel" id="f-phone" placeholder="ex. +351 912 345 678" />
+    </div>
     <div class="form-row">
       <div class="form-group" style="margin:0;">
         <label>Nº de adultos <span class="req">*</span></label>
@@ -802,6 +806,7 @@ function setDir(d) {
     ? '<strong>' + HOTEL + '</strong> → Aeroporto de Lisboa'
     : 'Aeroporto de Lisboa → <strong>' + HOTEL + '</strong>';
   document.getElementById('flight-label').innerHTML = 'Nº de voo' + (d === 'a2h' ? ' <span style="color:var(--gold)">*</span>' : '');
+  document.getElementById('phone-label').innerHTML = 'Telemóvel do cliente' + (d === 'a2h' ? ' <span style="color:var(--gold)">*</span>' : '');
 }
 
 function setPayment(p) {
@@ -853,12 +858,17 @@ async function submitTransfer() {
   const date = document.getElementById('f-date').value;
   const time = document.getElementById('f-time').value;
   const flight = document.getElementById('f-flight').value.trim();
+  const phone = document.getElementById('f-phone').value.trim();
   if (!name || !adults || !date || !time) {
     alert('Por favor preenche todos os campos obrigatórios (*).');
     return;
   }
   if (dir === 'a2h' && !flight) {
     alert('O número de voo é obrigatório para transfers do Aeroporto para o Hotel.');
+    return;
+  }
+  if (dir === 'a2h' && !phone) {
+    alert('O telemóvel do cliente é obrigatório para transfers do Aeroporto para o Hotel.');
     return;
   }
 
@@ -880,6 +890,7 @@ async function submitTransfer() {
   const t = {
     id: String(Date.now()), hotel: HOTEL, dir,
     name,
+    phone,
     adults: parseInt(adults) || 0,
     children: parseInt(document.getElementById('f-children').value) || 0,
     luggage: parseInt(document.getElementById('f-luggage').value) || 0,
@@ -897,7 +908,7 @@ async function submitTransfer() {
 
   await apiPost(t);
 
-  ['f-name','f-adults','f-children','f-luggage','f-date','f-time','f-flight','f-arrival','f-notes'].forEach(id => document.getElementById(id).value = '');
+  ['f-name','f-phone','f-adults','f-children','f-luggage','f-date','f-time','f-flight','f-arrival','f-notes'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('f-child-seat').checked = false;
   toggleChildAges();
   setDir('h2a');
@@ -1086,6 +1097,7 @@ function renderPanel() {
           (t.luggage > 0 ? '<div>🧳 <strong>' + t.luggage + '</strong> bagagem' + (t.luggage != 1 ? 's' : '') + '</div>' : '') +
           '<div>💳 ' + (t.payment === 'driver' ? 'Pag. motorista' : 'Pag. hotel') + '</div>' +
           '<div>' + (t.car_type === 'van' ? '🚐 Van' : '🚗 Sedan') + '</div>' +
+          (t.phone ? '<div>📱 ' + t.phone + '</div>' : '') +
           (t.child_seat && t.child_ages ? '<div style="grid-column:1/-1">🪑 Idade(s) da(s) criança(s): <strong>' + t.child_ages + '</strong></div>' : '') +
           (t.flight ? '<div>✈️ Voo <strong>' + t.flight + '</strong>' + (t.arrival ? ' — chegada <strong>' + fmtTime(t.arrival) + '</strong>' : '') + '</div>' : '') +
           (t.notes ? '<div style="grid-column:1/-1">📝 ' + t.notes + '</div>' : '') +
@@ -1101,6 +1113,9 @@ function renderPanel() {
         '<div class="edit-form">' +
           '<div class="edit-row">' +
             '<div class="edit-group" style="grid-column:1/-1"><label>Nome</label><input type="text" id="e-name-' + t.id + '" value="' + (t.name||'') + '" /></div>' +
+          '</div>' +
+          '<div class="edit-row">' +
+            '<div class="edit-group" style="grid-column:1/-1"><label>Telemóvel do cliente</label><input type="tel" id="e-phone-' + t.id + '" value="' + (t.phone||'') + '" /></div>' +
           '</div>' +
           '<div class="edit-row">' +
             '<div class="edit-group"><label>Data</label><input type="date" id="e-date-' + t.id + '" value="' + (t.date ? t.date.split('T')[0] : '') + '" /></div>' +
@@ -1167,6 +1182,7 @@ async function saveEdit(id) {
   const updated = {
     id: t.id,
     name: document.getElementById('e-name-' + id).value.trim(),
+    phone: document.getElementById('e-phone-' + id).value.trim(),
     date: document.getElementById('e-date-' + id).value,
     time: document.getElementById('e-time-' + id).value,
     adults: parseInt(document.getElementById('e-adults-' + id).value) || 0,

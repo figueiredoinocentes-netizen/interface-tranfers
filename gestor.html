@@ -584,6 +584,7 @@ function renderTransfers() {
       <td>
         <div class="cell-name">${t.name || '—'}</div>
         <div class="cell-hotel">${t.hotel || '—'}</div>
+        ${t.phone ? `<div class="cell-sub">📱 ${t.phone}</div>` : ''}
       </td>
       <td>
         <div>${fmtDate(t.date)}</div>

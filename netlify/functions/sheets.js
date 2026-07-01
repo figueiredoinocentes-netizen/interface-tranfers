@@ -12,6 +12,7 @@ async function sendTransferEmail(data, id) {
     ``,
     `<b>Hotel:</b> ${data.hotel || '—'}`,
     `<b>Cliente:</b> ${data.name || '—'}`,
+    `<b>Telemóvel:</b> ${data.phone || '—'}`,
     `<b>Data:</b> ${data.date || '—'} ${data.time || ''}`,
     `<b>Direção:</b> ${data.dir === 'chegada' ? 'Chegada ao hotel' : 'Partida do hotel'}`,
     `<b>Adults:</b> ${data.adults || '0'} | <b>Crianças:</b> ${data.children || '0'}`,
@@ -37,7 +38,7 @@ async function sendTransferEmail(data, id) {
 }
 
 const SHEETS = {
-  transfers: { name: 'Transfers', headers: ['id','hotel','dir','name','adults','children','luggage','child_seat','payment','date','time','flight','arrival','notes','status','driver','vehicle','car_type','partner_id','created_at','child_ages'] },
+  transfers: { name: 'Transfers', headers: ['id','hotel','dir','name','adults','children','luggage','child_seat','payment','date','time','flight','arrival','notes','status','driver','vehicle','car_type','partner_id','created_at','child_ages','phone'] },
   drivers:   { name: 'Motoristas', headers: ['id','name','phone','active'] },
   vehicles:  { name: 'Viaturas',   headers: ['id','name','active'] },
   partners:  { name: 'Parceiros',  headers: ['id','slug','name'] },
@@ -168,7 +169,7 @@ exports.handler = async (event) => {
 
       const sheetRow = rowIndex + 2;
       const updatableFields = type === 'transfers'
-        ? ['hotel','dir','name','adults','children','luggage','child_seat','payment','date','time','flight','arrival','notes','status','driver','vehicle','car_type','child_ages']
+        ? ['hotel','dir','name','adults','children','luggage','child_seat','payment','date','time','flight','arrival','notes','status','driver','vehicle','car_type','child_ages','phone']
         : ['name','phone','active'];
 
       for (const field of updatableFields) {
