@@ -935,6 +935,19 @@ const CAL_DAYS = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 function calPrev() { calMonth--; if (calMonth < 0) { calMonth = 11; calYear--; } renderCalendar(); }
 function calNext() { calMonth++; if (calMonth > 11) { calMonth = 0; calYear++; } renderCalendar(); }
 
+function calStatusColor(s) {
+  if (s === 'confirmado' || s === 'enviado') return '#3B6D11';
+  if (s === 'cancelado') return '#991B1B';
+  if (s === 'concluido') return '#888070';
+  return '#8A5A10'; // pendente / novo
+}
+function calStatusLabel(s) {
+  if (s === 'confirmado' || s === 'enviado') return 'Confirmado';
+  if (s === 'cancelado') return 'Cancelado';
+  if (s === 'concluido') return 'Concluído';
+  return 'Pendente';
+}
+
 function renderCalendar() {
   document.getElementById('cal-title').textContent = CAL_MONTHS[calMonth] + ' ' + calYear;
 
@@ -965,9 +978,9 @@ function renderCalendar() {
     html += `<div style="font-size:12px;font-weight:${isToday?'700':'500'};color:${isToday?'var(--gold)':'var(--text)'};margin-bottom:4px;">${day}</div>`;
 
     dayTransfers.forEach(t => {
-      const color = t.dir === 'a2h' ? '#1baf7a' : '#4a6fa5';
+      const color = calStatusColor(t.status);
       const icon = t.dir === 'a2h' ? '✈→🏨' : '🏨→✈';
-      html += `<div title="${t.name}" style="font-size:10px;background:${color}22;color:${color};border-radius:4px;padding:2px 5px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">`;
+      html += `<div title="${t.name} — ${calStatusLabel(t.status)}" style="font-size:10px;background:${color}22;color:${color};border-radius:4px;padding:2px 5px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">`;
       html += `${icon} ${fmtTime(t.time)} ${t.name}</div>`;
     });
 
