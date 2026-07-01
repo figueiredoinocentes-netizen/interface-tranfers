@@ -724,13 +724,14 @@
 const API = '/.netlify/functions/sheets';
 const _slug = new URLSearchParams(location.search).get('parceiro') || new URLSearchParams(location.search).get('hotel') || 'onyria';
 let HOTEL = _slug; // placeholder until API responds
+let PARTNER_ID = null;
 
 async function initHotelName() {
   try {
     const res = await fetch(`${API}?type=partners`);
     const partners = await res.json();
     const match = Array.isArray(partners) && partners.find(p => p.slug === _slug);
-    HOTEL = match ? match.name : _slug;
+    if (match) { HOTEL = match.name; PARTNER_ID = match.id; }
   } catch (_) {}
   document.getElementById('header-hotel-name').textContent = HOTEL;
   setDir(dir); // refresh route text with real name
@@ -833,7 +834,8 @@ async function submitTransfer() {
     flight: document.getElementById('f-flight').value.trim(),
     arrival: document.getElementById('f-arrival').value,
     notes: document.getElementById('f-notes').value.trim(),
-    status: 'pendente', driver: ''
+    status: 'pendente', driver: '',
+    partner_id: PARTNER_ID || ''
   };
 
   await apiPost(t);
@@ -860,6 +862,8 @@ async function loadPanel() {
   const all = await apiGet();
     // filter to only show transfers belonging to this partner
   transfers = all.filter(t => {
+    if (PARTNER_ID && t.partner_id) return String(t.partner_id) === String(PARTNER_ID);
+    // fallback for old transfers without partner_id
     const h = (t.hotel || '').toLowerCase().replace(/ /g, '-');
     return h === _slug || (HOTEL && h === HOTEL.toLowerCase().replace(/ /g, '-'));
   });
