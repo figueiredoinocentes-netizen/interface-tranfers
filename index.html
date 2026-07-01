@@ -597,7 +597,7 @@
     <div class="page-header-icon">🏨</div>
     <div>
       <div class="page-header-title">Pedido de Transfer</div>
-      <div class="page-header-hotel">Onyria</div>
+      <div class="page-header-hotel" id="header-hotel-name">Onyria</div>
     </div>
   </div>
 
@@ -616,7 +616,7 @@
     </div>
     <div class="route-pill">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--gold);flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-      <span id="route-text"><strong>Onyria</strong> → Aeroporto de Lisboa</span>
+      <span id="route-text"><strong id="route-hotel-name">Onyria</strong> → Aeroporto de Lisboa</span>
     </div>
 
     <div class="section-label">Cliente</div>
@@ -721,7 +721,16 @@
 
 <script>/* supabase removed */</script>
 <script>
-const HOTEL = 'Onyria';
+const HOTELS = {
+  'onyria':       'Onyria',
+  'penha-longa':  'Penha Longa',
+  'bairro-alto':  'Bairro Alto Hotel',
+  'four-seasons': 'Four Seasons',
+  // adicionar novos parceiros aqui
+};
+
+const _slug = new URLSearchParams(location.search).get('hotel') || 'onyria';
+const HOTEL = HOTELS[_slug] || 'Onyria';
 const API = '/.netlify/functions/sheets';
 
 let dir = 'h2a';
@@ -764,8 +773,8 @@ function setDir(d) {
   document.getElementById('btn-h2a').classList.toggle('selected', d === 'h2a');
   document.getElementById('btn-a2h').classList.toggle('selected', d === 'a2h');
   document.getElementById('route-text').innerHTML = d === 'h2a'
-    ? '<strong>Onyria</strong> → Aeroporto de Lisboa'
-    : 'Aeroporto de Lisboa → <strong>Onyria</strong>';
+    ? '<strong>' + HOTEL + '</strong> → Aeroporto de Lisboa'
+    : 'Aeroporto de Lisboa → <strong>' + HOTEL + '</strong>';
   document.getElementById('flight-label').innerHTML = 'Nº de voo' + (d === 'a2h' ? ' <span style="color:var(--gold)">*</span>' : '');
 }
 
@@ -1025,6 +1034,10 @@ async function saveEdit(id) {
 
   renderPanel();
 }
+
+// Set hotel name in static elements on page load
+document.getElementById('header-hotel-name').textContent = HOTEL;
+document.getElementById('route-hotel-name').textContent = HOTEL;
 
 function toClipboard(id) {
   const el = document.getElementById('copy-' + id);
