@@ -741,7 +741,9 @@
         <span id="cal-title" style="font-size:15px;font-weight:600;min-width:160px;text-align:center;"></span>
         <button onclick="calNext()" style="background:none;border:1px solid var(--border);color:var(--text);padding:6px 12px;border-radius:6px;cursor:pointer;">›</button>
       </div>
-      <div id="cal-grid"></div>
+      <div style="width:100vw;margin-left:calc(50% - 50vw);overflow-x:auto;padding:0 20px;box-sizing:border-box;">
+        <div id="cal-grid" style="min-width:980px;"></div>
+      </div>
     </div>
 
   </div>
@@ -1023,7 +1025,7 @@ function renderCalendar() {
     dayTransfers.forEach(t => {
       const color = calStatusColor(t.status);
       const icon = t.dir === 'a2h' ? '✈→🏨' : '🏨→✈';
-      html += `<div title="${t.name} — ${calStatusLabel(t.status)}" onclick="openCalDetail('${t.id}')" class="cal-event" style="font-size:10px;background:${color}22;color:${color};border-radius:4px;padding:2px 5px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">`;
+      html += `<div title="${t.name} — ${calStatusLabel(t.status)}" onclick="openCalDetail('${t.id}')" class="cal-event" style="font-size:10px;background:${color}22;color:${color};border-radius:4px;padding:2px 5px;margin-bottom:2px;">`;
       html += `${icon} ${fmtTime(t.time)} ${t.name}</div>`;
     });
 
