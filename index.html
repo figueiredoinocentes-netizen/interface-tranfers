@@ -1025,8 +1025,9 @@ function renderCalendar() {
     dayTransfers.forEach(t => {
       const color = calStatusColor(t.status);
       const icon = t.dir === 'a2h' ? '✈→🏨' : '🏨→✈';
+      const carIcon = t.car_type === 'van' ? '🚐' : '🚗';
       html += `<div title="${t.name} — ${calStatusLabel(t.status)}" onclick="openCalDetail('${t.id}')" class="cal-event" style="font-size:10px;background:${color}22;color:${color};border-radius:4px;padding:2px 5px;margin-bottom:2px;">`;
-      html += `${icon} ${fmtTime(t.time)} ${t.name}</div>`;
+      html += `${icon} ${carIcon} ${fmtTime(t.time)} ${t.name}</div>`;
     });
 
     html += `</div>`;
