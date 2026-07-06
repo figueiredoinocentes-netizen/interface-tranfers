@@ -38,10 +38,12 @@ async function sendTransferEmail(data, id) {
 }
 
 const SHEETS = {
-  transfers: { name: 'Transfers', headers: ['id','hotel','dir','name','adults','children','luggage','child_seat','payment','date','time','flight','arrival','notes','status','driver','vehicle','car_type','partner_id','created_at','child_ages','phone'] },
+  transfers: { name: 'Transfers', headers: ['id','hotel','dir','name','adults','children','luggage','child_seat','payment','date','time','flight','arrival','notes','status','driver','vehicle','car_type','partner_id','created_at','child_ages','phone','price'] },
   drivers:   { name: 'Motoristas', headers: ['id','name','phone','active'] },
   vehicles:  { name: 'Viaturas',   headers: ['id','name','active'] },
   partners:  { name: 'Parceiros',  headers: ['id','slug','name'] },
+  // one row per partner; 'id' holds the partner's id (1:1 relationship)
+  pricing:   { name: 'Precos', headers: ['id','price_h2a_sedan','price_h2a_van','price_a2h_sedan','price_a2h_van'] },
 };
 
 function getAuth() {
@@ -126,6 +128,8 @@ exports.handler = async (event) => {
       let newId;
       if (type === 'transfers') {
         newId = body.id || String(Date.now());
+      } else if (type === 'pricing') {
+        newId = body.id; // reuses the partner's own id (1:1 relationship)
       } else {
         const ids = existingRows.map(r => parseInt(r.id) || 0);
         newId = ids.length > 0 ? Math.max(...ids) + 1 : 1;
@@ -143,6 +147,8 @@ exports.handler = async (event) => {
         newRow = [newId, body.name || '', 'true'];
       } else if (type === 'partners') {
         newRow = [newId, body.slug || '', body.name || ''];
+      } else if (type === 'pricing') {
+        newRow = [newId, body.price_h2a_sedan || '', body.price_h2a_van || '', body.price_a2h_sedan || '', body.price_a2h_van || ''];
       }
 
       await sheets.spreadsheets.values.append({
@@ -169,7 +175,11 @@ exports.handler = async (event) => {
 
       const sheetRow = rowIndex + 2;
       const updatableFields = type === 'transfers'
-        ? ['hotel','dir','name','adults','children','luggage','child_seat','payment','date','time','flight','arrival','notes','status','driver','vehicle','car_type','child_ages','phone']
+        ? ['hotel','dir','name','adults','children','luggage','child_seat','payment','date','time','flight','arrival','notes','status','driver','vehicle','car_type','child_ages','phone','price']
+        : type === 'pricing'
+        ? ['price_h2a_sedan','price_h2a_van','price_a2h_sedan','price_a2h_van']
+        : type === 'partners'
+        ? ['name']
         : ['name','phone','active'];
 
       for (const field of updatableFields) {
