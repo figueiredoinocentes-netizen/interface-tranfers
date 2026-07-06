@@ -1017,7 +1017,7 @@ function renderCalendar() {
     const isToday = today.getFullYear() === calYear && today.getMonth() === calMonth && today.getDate() === day;
 
     const borderStyle = isToday ? 'border:1.5px solid var(--gold);' : 'border:1px solid var(--border);';
-    html += `<div style="min-height:80px;border-radius:8px;padding:6px;${borderStyle}background:var(--surface);">`;
+    html += `<div style="height:100px;overflow-y:auto;border-radius:8px;padding:6px;${borderStyle}background:var(--surface);">`;
     html += `<div style="font-size:12px;font-weight:${isToday?'700':'500'};color:${isToday?'var(--gold)':'var(--text)'};margin-bottom:4px;">${day}</div>`;
 
     dayTransfers.forEach(t => {
