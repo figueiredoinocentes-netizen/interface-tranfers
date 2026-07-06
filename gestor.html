@@ -482,8 +482,9 @@ function fmtDate(d) {
   return `${day}/${m}/${y}`;
 }
 function fmtTime(t) { return t ? t.slice(0,5) : '—'; }
-function dirLabel(d) {
-  if (d === 'h2a') return '<span class="dir-badge dir-h2a">Hotel → Aeroporto</span>';
+function dirLabel(t) {
+  if (t.dir === 'custom') return '<span class="dir-badge dir-a2h">' + (t.origin||'—') + ' → ' + (t.destination||'—') + '</span>';
+  if (t.dir === 'h2a') return '<span class="dir-badge dir-h2a">Hotel → Aeroporto</span>';
   return '<span class="dir-badge dir-a2h">Aeroporto → Hotel</span>';
 }
 
@@ -553,7 +554,7 @@ function renderCalendar() {
 
     dayTransfers.forEach(t => {
       const color = statusColor(t.status);
-      const icon = t.dir === 'a2h' ? '✈→🏨' : '🏨→✈';
+      const icon = t.dir === 'custom' ? '📍' : (t.dir === 'a2h' ? '✈→🏨' : '🏨→✈');
       const carIcon = t.car_type === 'van' ? '🚐' : '🚗';
       html += `<div title="${t.name} — ${t.hotel} — ${statusLabel(t.status)}" onclick="openServiceModal('${t.id}')" class="cal-event" style="cursor:pointer;font-size:10px;background:${color}22;color:${color};border-radius:4px;padding:2px 5px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:background 0.15s;">`;
       html += `${icon} ${carIcon} ${fmtTime(t.time)} ${t.name}</div>`;
@@ -739,7 +740,7 @@ function renderTransfers() {
         <div class="cell-name">${t.name || '—'}</div>
         <div class="cell-hotel">${t.hotel || '—'}</div>
       </td>
-      <td>${dirLabel(t.dir)}</td>
+      <td>${dirLabel(t)}</td>
       <td>${t.car_type === 'van' ? '🚐 Van' : '🚗 Sedan'}</td>
       <td>
         <div>${fmtDate(t.date)}</div>
@@ -761,7 +762,7 @@ function openServiceModal(id) {
   document.getElementById('sm-subtitle').textContent = t.hotel || '—';
 
   const rows = [];
-  rows.push(`<div>${dirLabel(t.dir)}</div>`);
+  rows.push(`<div>${dirLabel(t)}</div>`);
   rows.push(`<div>📅 <strong>${fmtDate(t.date)}</strong> às <strong>${fmtTime(t.time)}</strong></div>`);
   if (t.phone) rows.push(`<div>📱 ${t.phone}</div>`);
   rows.push(`<div>👥 ${parseInt(t.adults)||0} adulto(s)${t.children ? ' + ' + t.children + ' criança(s)' : ''}</div>`);

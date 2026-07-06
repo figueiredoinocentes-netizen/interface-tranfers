@@ -14,7 +14,7 @@ async function sendTransferEmail(data, id) {
     `<b>Cliente:</b> ${data.name || '—'}`,
     `<b>Telemóvel:</b> ${data.phone || '—'}`,
     `<b>Data:</b> ${data.date || '—'} ${data.time || ''}`,
-    `<b>Direção:</b> ${data.dir === 'chegada' ? 'Chegada ao hotel' : 'Partida do hotel'}`,
+    `<b>Direção:</b> ${data.dir === 'custom' ? (data.origin || '—') + ' → ' + (data.destination || '—') : data.dir === 'a2h' ? 'Aeroporto → Hotel' : 'Hotel → Aeroporto'}`,
     `<b>Adults:</b> ${data.adults || '0'} | <b>Crianças:</b> ${data.children || '0'}`,
     `<b>Bagagem:</b> ${data.luggage || '0'}`,
     `<b>Voo:</b> ${data.flight || '—'} | <b>Chegada:</b> ${data.arrival || '—'}`,
@@ -38,7 +38,7 @@ async function sendTransferEmail(data, id) {
 }
 
 const SHEETS = {
-  transfers: { name: 'Transfers', headers: ['id','hotel','dir','name','adults','children','luggage','child_seat','payment','date','time','flight','arrival','notes','status','driver','vehicle','car_type','partner_id','created_at','child_ages','phone','price'] },
+  transfers: { name: 'Transfers', headers: ['id','hotel','dir','name','adults','children','luggage','child_seat','payment','date','time','flight','arrival','notes','status','driver','vehicle','car_type','partner_id','created_at','child_ages','phone','price','origin','destination'] },
   drivers:   { name: 'Motoristas', headers: ['id','name','phone','active'] },
   vehicles:  { name: 'Viaturas',   headers: ['id','name','active'] },
   partners:  { name: 'Parceiros',  headers: ['id','slug','name'] },
@@ -175,7 +175,7 @@ exports.handler = async (event) => {
 
       const sheetRow = rowIndex + 2;
       const updatableFields = type === 'transfers'
-        ? ['hotel','dir','name','adults','children','luggage','child_seat','payment','date','time','flight','arrival','notes','status','driver','vehicle','car_type','child_ages','phone','price']
+        ? ['hotel','dir','name','adults','children','luggage','child_seat','payment','date','time','flight','arrival','notes','status','driver','vehicle','car_type','child_ages','phone','price','origin','destination']
         : type === 'pricing'
         ? ['price_h2a_sedan','price_h2a_van','price_a2h_sedan','price_a2h_van']
         : type === 'partners'

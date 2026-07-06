@@ -606,7 +606,7 @@
   <div class="container">
 
     <div class="section-label">Direção do transfer</div>
-    <div class="dir-toggle">
+    <div class="dir-toggle" style="grid-template-columns:1fr 1fr 1fr;">
       <button class="dir-btn selected" id="btn-h2a" onclick="setDir('h2a')">
         <span class="dir-icon">🏨 → ✈️</span>
         <span class="dir-label">Hotel → Aeroporto</span>
@@ -615,10 +615,24 @@
         <span class="dir-icon">✈️ → 🏨</span>
         <span class="dir-label">Aeroporto → Hotel</span>
       </button>
+      <button class="dir-btn" id="btn-custom" onclick="setDir('custom')">
+        <span class="dir-icon">📍 → 📍</span>
+        <span class="dir-label">Personalizado</span>
+      </button>
     </div>
-    <div class="route-pill">
+    <div class="route-pill" id="route-pill-fixed">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--gold);flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
       <span id="route-text"><strong id="route-hotel-name">Onyria</strong> → Aeroporto de Lisboa</span>
+    </div>
+    <div class="form-row" id="route-custom-fields" style="display:none;">
+      <div class="form-group" style="margin:0;">
+        <label>Partida <span class="req">*</span></label>
+        <input type="text" id="f-origin" placeholder="ex. Sintra" />
+      </div>
+      <div class="form-group" style="margin:0;">
+        <label>Destino <span class="req">*</span></label>
+        <input type="text" id="f-destination" placeholder="ex. Cascais" />
+      </div>
     </div>
 
     <div class="section-label">Cliente</div>
@@ -835,9 +849,12 @@ function setDir(d) {
   dir = d;
   document.getElementById('btn-h2a').classList.toggle('selected', d === 'h2a');
   document.getElementById('btn-a2h').classList.toggle('selected', d === 'a2h');
+  document.getElementById('btn-custom').classList.toggle('selected', d === 'custom');
   document.getElementById('route-text').innerHTML = d === 'h2a'
     ? '<strong>' + HOTEL + '</strong> → Aeroporto de Lisboa'
     : 'Aeroporto de Lisboa → <strong>' + HOTEL + '</strong>';
+  document.getElementById('route-pill-fixed').style.display = d === 'custom' ? 'none' : 'flex';
+  document.getElementById('route-custom-fields').style.display = d === 'custom' ? 'grid' : 'none';
   document.getElementById('flight-label').innerHTML = 'Nº de voo' + (d === 'a2h' ? ' <span style="color:var(--gold)">*</span>' : '');
   document.getElementById('phone-label').innerHTML = 'Telemóvel do cliente' + (d === 'a2h' ? ' <span style="color:var(--gold)">*</span>' : '');
 }
@@ -904,6 +921,12 @@ async function submitTransfer() {
     alert('O telemóvel do cliente é obrigatório para transfers do Aeroporto para o Hotel.');
     return;
   }
+  const origin = document.getElementById('f-origin').value.trim();
+  const destination = document.getElementById('f-destination').value.trim();
+  if (dir === 'custom' && (!origin || !destination)) {
+    alert('Por favor indica a partida e o destino do serviço personalizado.');
+    return;
+  }
 
   const childSeat = document.getElementById('f-child-seat').checked;
   let childAges = [];
@@ -937,12 +960,14 @@ async function submitTransfer() {
     notes: document.getElementById('f-notes').value.trim(),
     status: 'pendente', driver: '',
     partner_id: PARTNER_ID || '',
-    price: lookupPrice(dir, carType)
+    price: lookupPrice(dir, carType),
+    origin: dir === 'custom' ? origin : '',
+    destination: dir === 'custom' ? destination : ''
   };
 
   await apiPost(t);
 
-  ['f-name','f-phone','f-adults','f-children','f-luggage','f-date','f-time','f-flight','f-arrival','f-notes'].forEach(id => document.getElementById(id).value = '');
+  ['f-name','f-phone','f-adults','f-children','f-luggage','f-date','f-time','f-flight','f-arrival','f-notes','f-origin','f-destination'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('f-child-seat').checked = false;
   toggleChildAges();
   setDir('h2a');
@@ -1024,7 +1049,7 @@ function renderCalendar() {
 
     dayTransfers.forEach(t => {
       const color = calStatusColor(t.status);
-      const icon = t.dir === 'a2h' ? '✈→🏨' : '🏨→✈';
+      const icon = t.dir === 'custom' ? '📍' : (t.dir === 'a2h' ? '✈→🏨' : '🏨→✈');
       const carIcon = t.car_type === 'van' ? '🚐' : '🚗';
       html += `<div title="${t.name} — ${calStatusLabel(t.status)}" onclick="openCalDetail('${t.id}')" class="cal-event" style="font-size:10px;background:${color}22;color:${color};border-radius:4px;padding:2px 5px;margin-bottom:2px;">`;
       html += `${icon} ${carIcon} ${fmtTime(t.time)} ${t.name}</div>`;
@@ -1044,7 +1069,7 @@ function openCalDetail(id) {
   document.getElementById('cal-detail-title').textContent = t.name || '—';
 
   const rows = [];
-  rows.push(`<div>${t.dir === 'h2a' ? '🏨 → ✈️ Hotel → Aeroporto' : '✈️ → 🏨 Aeroporto → Hotel'}</div>`);
+  rows.push(`<div>${t.dir === 'custom' ? '📍 ' + (t.origin||'—') + ' → ' + (t.destination||'—') : (t.dir === 'h2a' ? '🏨 → ✈️ Hotel → Aeroporto' : '✈️ → 🏨 Aeroporto → Hotel')}</div>`);
   rows.push(`<div>📅 <strong>${fmtDate(t.date)}</strong> às <strong>${fmtTime(t.time)}</strong></div>`);
   rows.push(`<div>👥 ${parseInt(t.adults)||0} adulto(s)${t.children ? ' + ' + t.children + ' criança(s)' : ''}</div>`);
   if (t.luggage) rows.push(`<div>🧳 ${t.luggage} bagagem(ns)</div>`);
@@ -1094,8 +1119,9 @@ function fmtTime(t) {
   } catch(e) { return t; }
 }
 
-function dirLabel(d) {
-  return d === 'h2a' ? HOTEL + ' → Aeroporto' : 'Aeroporto → ' + HOTEL;
+function dirLabel(t) {
+  if (t.dir === 'custom') return (t.origin || '—') + ' → ' + (t.destination || '—');
+  return t.dir === 'h2a' ? HOTEL + ' → Aeroporto' : 'Aeroporto → ' + HOTEL;
 }
 
 function buildMsg(t) {
@@ -1103,7 +1129,7 @@ function buildMsg(t) {
   m += '🏨 Hotel: ' + t.hotel + '\n';
   m += '👤 Cliente: ' + t.name + '\n';
   m += '📅 Data: ' + fmtDate(t.date) + ' às ' + t.time + '\n';
-  m += '🔄 ' + dirLabel(t.dir) + '\n';
+  m += '🔄 ' + dirLabel(t) + '\n';
   m += '👥 Adultos: ' + t.adults;
   if (t.children) m += ' | Crianças: ' + t.children;
   m += '\n';
@@ -1139,8 +1165,8 @@ function renderPanel() {
   list.innerHTML = sorted.map(t => {
     const childTag = isChildSeat(t.child_seat) ? '<span class="tag tag-child">cadeirinha</span>' : '';
     const payTag = t.payment === 'hotel' ? '<span class="tag tag-hotel">pag. hotel</span>' : '';
-    const dirIcon = t.dir === 'h2a' ? '🏨 → ✈️' : '✈️ → 🏨';
-    const dirText = t.dir === 'h2a' ? 'Hotel → Aeroporto' : 'Aeroporto → Hotel';
+    const dirIcon = t.dir === 'custom' ? '📍 → 📍' : (t.dir === 'h2a' ? '🏨 → ✈️' : '✈️ → 🏨');
+    const dirText = t.dir === 'custom' ? (t.origin||'—') + ' → ' + (t.destination||'—') : (t.dir === 'h2a' ? 'Hotel → Aeroporto' : 'Aeroporto → Hotel');
     const pending = isPending(t.status);
     const statusClass = (t.status === 'pendente' || t.status === 'novo') ? 'pendente' : (t.status === 'confirmado' || t.status === 'enviado') ? 'confirmado' : t.status;
 
@@ -1190,7 +1216,11 @@ function renderPanel() {
           '</div>' +
           '<div class="edit-row">' +
             '<div class="edit-group"><label>Bagagens</label><input type="number" id="e-luggage-' + t.id + '" value="' + (t.luggage||0) + '" min="0" /></div>' +
-            '<div class="edit-group"><label>Direção</label><select id="e-dir-' + t.id + '"><option value="h2a"' + (t.dir==='h2a'?' selected':'') + '>Hotel → Aeroporto</option><option value="a2h"' + (t.dir==='a2h'?' selected':'') + '>Aeroporto → Hotel</option></select></div>' +
+            '<div class="edit-group"><label>Direção</label><select id="e-dir-' + t.id + '"><option value="h2a"' + (t.dir==='h2a'?' selected':'') + '>Hotel → Aeroporto</option><option value="a2h"' + (t.dir==='a2h'?' selected':'') + '>Aeroporto → Hotel</option><option value="custom"' + (t.dir==='custom'?' selected':'') + '>Personalizado</option></select></div>' +
+          '</div>' +
+          '<div class="edit-row">' +
+            '<div class="edit-group"><label>Partida (se personalizado)</label><input type="text" id="e-origin-' + t.id + '" value="' + (t.origin||'') + '" /></div>' +
+            '<div class="edit-group"><label>Destino (se personalizado)</label><input type="text" id="e-destination-' + t.id + '" value="' + (t.destination||'') + '" /></div>' +
           '</div>' +
           '<div class="edit-row">' +
             '<div class="edit-group"><label>Nº de voo</label><input type="text" id="e-flight-' + t.id + '" value="' + (t.flight||'') + '" /></div>' +
@@ -1252,6 +1282,8 @@ async function saveEdit(id) {
     children: parseInt(document.getElementById('e-children-' + id).value) || 0,
     luggage: parseInt(document.getElementById('e-luggage-' + id).value) || 0,
     dir: document.getElementById('e-dir-' + id).value,
+    origin: document.getElementById('e-origin-' + id).value.trim(),
+    destination: document.getElementById('e-destination-' + id).value.trim(),
     flight: document.getElementById('e-flight-' + id).value.trim(),
     arrival: document.getElementById('e-arrival-' + id).value,
     payment: document.getElementById('e-payment-' + id).value,
