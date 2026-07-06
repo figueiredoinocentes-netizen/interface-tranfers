@@ -552,7 +552,7 @@ function renderCalendar() {
     dayTransfers.forEach(t => {
       const color = statusColor(t.status);
       const icon = t.dir === 'a2h' ? '✈→🏨' : '🏨→✈';
-      html += `<div title="${t.name} — ${t.hotel} — ${statusLabel(t.status)}" style="font-size:10px;background:${color}22;color:${color};border-radius:4px;padding:2px 5px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">`;
+      html += `<div title="${t.name} — ${t.hotel} — ${statusLabel(t.status)}" onclick="openServiceModal('${t.id}')" style="cursor:pointer;font-size:10px;background:${color}22;color:${color};border-radius:4px;padding:2px 5px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">`;
       html += `${icon} ${fmtTime(t.time)} ${t.name}</div>`;
     });
 
