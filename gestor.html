@@ -416,7 +416,7 @@
 
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:22px;">
       <button onclick="closePartnerModal()" style="background:transparent;border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 16px;cursor:pointer;font-family:inherit;font-size:13px;">Cancelar</button>
-      <button class="btn-add" onclick="savePartnerModal()">Guardar</button>
+      <button class="btn-add" id="pm-save-btn" onclick="savePartnerModal()">Guardar</button>
     </div>
 
     <div style="border-top:1px solid var(--border);margin-top:22px;padding-top:16px;">
@@ -606,6 +606,11 @@ async function savePartnerModal() {
   const name = document.getElementById('pm-name').value.trim();
   if (!name) { showToast('O nome não pode ficar vazio'); return; }
 
+  const btn = document.getElementById('pm-save-btn');
+  if (btn.disabled) return; // guard against double-clicks creating duplicate rows
+  btn.disabled = true;
+  btn.textContent = 'A guardar…';
+
   const priceBody = {
     id,
     price_h2a_sedan: document.getElementById('pm-price-h2a-sedan').value,
@@ -618,6 +623,10 @@ async function savePartnerModal() {
 
   const existingPricing = pricing.find(x => String(x.id) === String(id));
   const priceRes = await fetch(`${API}?type=pricing`, { method: existingPricing ? 'PUT' : 'POST', body: JSON.stringify(priceBody) });
+
+  btn.disabled = false;
+  btn.textContent = 'Guardar';
+
   if (!priceRes.ok) { showToast('Erro ao guardar preços'); return; }
 
   closePartnerModal();
