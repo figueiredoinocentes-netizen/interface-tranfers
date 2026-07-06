@@ -389,6 +389,8 @@
   }
 
   .card:hover { border-color: var(--border-strong); box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .cal-event { cursor: pointer; transition: filter 0.15s; }
+  .cal-event:hover { outline: 1.5px solid currentColor; filter: brightness(0.95); }
 
   .card-header {
     display: flex;
@@ -745,6 +747,17 @@
   </div>
 </div>
 
+<!-- CALENDAR EVENT DETAIL MODAL (read-only) -->
+<div id="cal-detail-modal" onclick="if(event.target===this)closeCalDetail()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:100;align-items:center;justify-content:center;">
+  <div style="background:var(--bg);border-radius:16px;width:480px;max-width:92vw;max-height:85vh;overflow-y:auto;padding:24px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <div style="font-size:16px;font-weight:600;" id="cal-detail-title"></div>
+      <button onclick="closeCalDetail()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted);line-height:1;">×</button>
+    </div>
+    <div id="cal-detail-body" style="display:flex;flex-direction:column;gap:8px;font-size:13px;"></div>
+  </div>
+</div>
+
 <script>/* supabase removed */</script>
 <script>
 const API = '/.netlify/functions/sheets';
@@ -1010,7 +1023,7 @@ function renderCalendar() {
     dayTransfers.forEach(t => {
       const color = calStatusColor(t.status);
       const icon = t.dir === 'a2h' ? '✈→🏨' : '🏨→✈';
-      html += `<div title="${t.name} — ${calStatusLabel(t.status)}" style="font-size:10px;background:${color}22;color:${color};border-radius:4px;padding:2px 5px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">`;
+      html += `<div title="${t.name} — ${calStatusLabel(t.status)}" onclick="openCalDetail('${t.id}')" class="cal-event" style="font-size:10px;background:${color}22;color:${color};border-radius:4px;padding:2px 5px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">`;
       html += `${icon} ${fmtTime(t.time)} ${t.name}</div>`;
     });
 
@@ -1019,6 +1032,32 @@ function renderCalendar() {
 
   html += `</div>`;
   document.getElementById('cal-grid').innerHTML = html;
+}
+
+function openCalDetail(id) {
+  const t = transfers.find(x => String(x.id) === String(id));
+  if (!t) return;
+
+  document.getElementById('cal-detail-title').textContent = t.name || '—';
+
+  const rows = [];
+  rows.push(`<div>${t.dir === 'h2a' ? '🏨 → ✈️ Hotel → Aeroporto' : '✈️ → 🏨 Aeroporto → Hotel'}</div>`);
+  rows.push(`<div>📅 <strong>${fmtDate(t.date)}</strong> às <strong>${fmtTime(t.time)}</strong></div>`);
+  rows.push(`<div>👥 ${parseInt(t.adults)||0} adulto(s)${t.children ? ' + ' + t.children + ' criança(s)' : ''}</div>`);
+  if (t.luggage) rows.push(`<div>🧳 ${t.luggage} bagagem(ns)</div>`);
+  if (isChildSeat(t.child_seat)) rows.push(`<div>🪑 Cadeirinha necessária${t.child_ages ? ' — idade(s): ' + t.child_ages : ''}</div>`);
+  rows.push(`<div>${t.car_type === 'van' ? '🚐 Van' : '🚗 Sedan'}</div>`);
+  if (t.flight) rows.push(`<div>✈️ Voo ${t.flight}${t.arrival ? ' — chegada ' + fmtTime(t.arrival) : ''}</div>`);
+  rows.push(`<div>💳 Pagamento ${t.payment === 'driver' ? 'ao motorista' : 'ao hotel'}</div>`);
+  if (t.notes) rows.push(`<div>📝 ${t.notes}</div>`);
+  rows.push(`<div>📌 Estado: <strong>${calStatusLabel(t.status)}</strong></div>`);
+
+  document.getElementById('cal-detail-body').innerHTML = rows.join('');
+  document.getElementById('cal-detail-modal').style.display = 'flex';
+}
+
+function closeCalDetail() {
+  document.getElementById('cal-detail-modal').style.display = 'none';
 }
 
 async function loadPanel() {
