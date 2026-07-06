@@ -276,6 +276,7 @@
             <th>Voo</th>
             <th>Pax</th>
             <th>Veículo</th>
+            <th>Preço</th>
             <th>Motorista</th>
             <th>Viatura</th>
             <th>Estado</th>
@@ -378,12 +379,52 @@
   </div>
 </div>
 
+<!-- PARTNER EDIT MODAL -->
+<div id="partner-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:100;align-items:center;justify-content:center;">
+  <div style="background:var(--bg);border-radius:var(--radius-lg);width:520px;max-width:92vw;max-height:85vh;overflow-y:auto;padding:24px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+      <div style="font-size:16px;font-weight:600;">Editar parceiro</div>
+      <button onclick="closePartnerModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted);line-height:1;">×</button>
+    </div>
+
+    <div class="form-group">
+      <label>Nome do parceiro</label>
+      <input class="add-input" id="pm-name" style="width:100%;" />
+    </div>
+
+    <div style="font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin:20px 0 10px;">Preços dos serviços (€)</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="form-group" style="margin:0;">
+        <label>Hotel → Aeroporto (Sedan)</label>
+        <input class="add-input" type="number" min="0" step="0.01" id="pm-price-h2a-sedan" style="width:100%;" placeholder="0.00" />
+      </div>
+      <div class="form-group" style="margin:0;">
+        <label>Hotel → Aeroporto (Van)</label>
+        <input class="add-input" type="number" min="0" step="0.01" id="pm-price-h2a-van" style="width:100%;" placeholder="0.00" />
+      </div>
+      <div class="form-group" style="margin:0;">
+        <label>Aeroporto → Hotel (Sedan)</label>
+        <input class="add-input" type="number" min="0" step="0.01" id="pm-price-a2h-sedan" style="width:100%;" placeholder="0.00" />
+      </div>
+      <div class="form-group" style="margin:0;">
+        <label>Aeroporto → Hotel (Van)</label>
+        <input class="add-input" type="number" min="0" step="0.01" id="pm-price-a2h-van" style="width:100%;" placeholder="0.00" />
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:22px;">
+      <button onclick="closePartnerModal()" style="background:transparent;border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 16px;cursor:pointer;font-family:inherit;font-size:13px;">Cancelar</button>
+      <button class="btn-add" onclick="savePartnerModal()">Guardar</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
 // all data via Netlify Function → Google Sheets
 
-let transfers = [], drivers = [], vehicles = [], partners = [], currentFilter = 'pendente';
+let transfers = [], drivers = [], vehicles = [], partners = [], pricing = [], currentFilter = 'pendente';
 const BASE_URL = 'https://vianta-transfers.netlify.app';
 
 function fmtDate(d) {
@@ -495,16 +536,18 @@ const API = '/.netlify/functions/sheets';
 
 // ── LOAD ─────────────────────────────────────────
 async function loadAll() {
-  const [tr, dr, ve, pt] = await Promise.all([
+  const [tr, dr, ve, pt, pr] = await Promise.all([
     fetch(`${API}?type=transfers`).then(r => r.json()),
     fetch(`${API}?type=drivers`).then(r => r.json()),
     fetch(`${API}?type=vehicles`).then(r => r.json()),
     fetch(`${API}?type=partners`).then(r => r.json()),
+    fetch(`${API}?type=pricing`).then(r => r.json()),
   ]);
   transfers = Array.isArray(tr) ? tr : [];
   drivers = Array.isArray(dr) ? dr : [];
   vehicles = Array.isArray(ve) ? ve : [];
   partners = Array.isArray(pt) ? pt : [];
+  pricing = Array.isArray(pr) ? pr : [];
   renderTransfers();
   renderDrivers();
   renderVehicles();
@@ -517,15 +560,63 @@ function renderPartners() {
   if (!partners.length) { el.innerHTML = '<div class="empty">Sem parceiros. Adiciona o primeiro abaixo.</div>'; return; }
   el.innerHTML = partners.map(p => `
     <div class="team-list-item">
-      <div style="flex:1;min-width:0;">
+      <div style="flex:1;min-width:0;cursor:pointer;" onclick="openPartnerModal(${p.id})">
         <div class="team-item-name">${p.name}</div>
         <div class="team-item-sub" style="display:flex;align-items:center;gap:6px;margin-top:3px;">
           <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${BASE_URL}/?parceiro=${p.slug}</span>
-          <button onclick="copyLink('${p.slug}')" id="copy-btn-${p.slug}" style="flex-shrink:0;background:none;border:none;color:var(--gold);cursor:pointer;font-size:11px;font-weight:500;padding:0;">Copiar</button>
+          <button onclick="event.stopPropagation();copyLink('${p.slug}')" id="copy-btn-${p.slug}" style="flex-shrink:0;background:none;border:none;color:var(--gold);cursor:pointer;font-size:11px;font-weight:500;padding:0;">Copiar</button>
         </div>
       </div>
-      <button class="btn-remove" onclick="removePartner(${p.id})" style="flex-shrink:0;margin-left:12px;">Remover</button>
+      <button class="btn-remove" onclick="event.stopPropagation();removePartner(${p.id})" style="flex-shrink:0;margin-left:12px;">Remover</button>
     </div>`).join('');
+}
+
+// ── PARTNER MODAL ─────────────────────────────────
+let editingPartnerId = null;
+
+function openPartnerModal(id) {
+  const p = partners.find(x => String(x.id) === String(id));
+  if (!p) return;
+  editingPartnerId = id;
+  const pr = pricing.find(x => String(x.id) === String(id)) || {};
+
+  document.getElementById('pm-name').value = p.name;
+  document.getElementById('pm-price-h2a-sedan').value = pr.price_h2a_sedan || '';
+  document.getElementById('pm-price-h2a-van').value = pr.price_h2a_van || '';
+  document.getElementById('pm-price-a2h-sedan').value = pr.price_a2h_sedan || '';
+  document.getElementById('pm-price-a2h-van').value = pr.price_a2h_van || '';
+
+  document.getElementById('partner-modal').style.display = 'flex';
+}
+
+function closePartnerModal() {
+  document.getElementById('partner-modal').style.display = 'none';
+  editingPartnerId = null;
+}
+
+async function savePartnerModal() {
+  if (!editingPartnerId) return;
+  const id = editingPartnerId;
+  const name = document.getElementById('pm-name').value.trim();
+  if (!name) { showToast('O nome não pode ficar vazio'); return; }
+
+  const priceBody = {
+    id,
+    price_h2a_sedan: document.getElementById('pm-price-h2a-sedan').value,
+    price_h2a_van: document.getElementById('pm-price-h2a-van').value,
+    price_a2h_sedan: document.getElementById('pm-price-a2h-sedan').value,
+    price_a2h_van: document.getElementById('pm-price-a2h-van').value,
+  };
+
+  await fetch(`${API}?type=partners`, { method: 'PUT', body: JSON.stringify({ id, name }) });
+
+  const existingPricing = pricing.find(x => String(x.id) === String(id));
+  const priceRes = await fetch(`${API}?type=pricing`, { method: existingPricing ? 'PUT' : 'POST', body: JSON.stringify(priceBody) });
+  if (!priceRes.ok) { showToast('Erro ao guardar preços'); return; }
+
+  closePartnerModal();
+  await loadAll();
+  showToast('Parceiro atualizado ✓');
 }
 
 function copyLink(slug) {
@@ -598,6 +689,9 @@ function renderTransfers() {
       <td>${(parseInt(t.adults)||0) + (parseInt(t.children)||0)} pax</td>
       <td>${t.car_type === 'van' ? '🚐 Van' : '🚗 Sedan'}</td>
       <td>
+        <input type="number" min="0" step="0.01" class="inline-select" id="pr-${t.id}" value="${t.price || ''}" placeholder="—" style="width:70px;" onchange="markDirty('${t.id}')" />
+      </td>
+      <td>
         <select class="inline-select" id="dr-${t.id}" onchange="markDirty('${t.id}')">
           <option value="">— motorista —</option>
           ${driverOpts}
@@ -638,10 +732,11 @@ async function saveTransfer(id) {
   const driverVal = document.getElementById('dr-' + id)?.value || null;
   const vehicleVal = document.getElementById('ve-' + id)?.value || null;
   const statusVal = document.getElementById('st-' + id)?.value;
+  const priceVal = document.getElementById('pr-' + id)?.value || '';
 
   const res = await fetch(`${API}?type=transfers`, {
     method: 'PUT',
-    body: JSON.stringify({ id, driver: driverVal || '', vehicle: vehicleVal || '', status: statusVal })
+    body: JSON.stringify({ id, driver: driverVal || '', vehicle: vehicleVal || '', status: statusVal, price: priceVal })
   });
 
   if (!res.ok) { showToast('Erro ao guardar'); return; }
