@@ -172,6 +172,7 @@
   .team-item-name { font-weight: 500; }
   .partner-row { cursor: pointer; transition: background 0.15s; }
   .partner-row:hover { background: var(--surface2); }
+  .cal-event:hover { outline: 1.5px solid currentColor; filter: brightness(0.95); }
   .team-item-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
 
   .btn-remove {
@@ -552,7 +553,7 @@ function renderCalendar() {
     dayTransfers.forEach(t => {
       const color = statusColor(t.status);
       const icon = t.dir === 'a2h' ? '✈→🏨' : '🏨→✈';
-      html += `<div title="${t.name} — ${t.hotel} — ${statusLabel(t.status)}" onclick="openServiceModal('${t.id}')" style="cursor:pointer;font-size:10px;background:${color}22;color:${color};border-radius:4px;padding:2px 5px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">`;
+      html += `<div title="${t.name} — ${t.hotel} — ${statusLabel(t.status)}" onclick="openServiceModal('${t.id}')" class="cal-event" style="cursor:pointer;font-size:10px;background:${color}22;color:${color};border-radius:4px;padding:2px 5px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:background 0.15s;">`;
       html += `${icon} ${fmtTime(t.time)} ${t.name}</div>`;
     });
 
