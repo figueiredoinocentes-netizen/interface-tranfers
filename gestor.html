@@ -386,7 +386,103 @@
       <button onclick="closeServiceModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted);line-height:1;">×</button>
     </div>
 
-    <div id="sm-details" style="display:flex;flex-direction:column;gap:8px;font-size:13px;margin-bottom:20px;padding-bottom:18px;border-bottom:1px solid var(--border);"></div>
+    <div style="margin-bottom:20px;padding-bottom:18px;border-bottom:1px solid var(--border);">
+      <div style="font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">Cliente</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+        <div class="form-group" style="margin:0;">
+          <label>Nome</label>
+          <input class="add-input" id="sm-name" style="width:100%;" />
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label>Telemóvel</label>
+          <input class="add-input" type="tel" id="sm-phone" style="width:100%;" />
+        </div>
+      </div>
+
+      <div style="font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">Percurso e horário</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+        <div class="form-group" style="margin:0;">
+          <label>Direção</label>
+          <select class="add-input" id="sm-dir" style="width:100%;" onchange="toggleSmCustomRoute()">
+            <option value="h2a">Hotel → Aeroporto</option>
+            <option value="a2h">Aeroporto → Hotel</option>
+            <option value="custom">Personalizado</option>
+          </select>
+        </div>
+        <div></div>
+        <div class="form-group" id="sm-origin-wrap" style="margin:0;display:none;">
+          <label>Partida</label>
+          <input class="add-input" id="sm-origin" style="width:100%;" />
+        </div>
+        <div class="form-group" id="sm-destination-wrap" style="margin:0;display:none;">
+          <label>Destino</label>
+          <input class="add-input" id="sm-destination" style="width:100%;" />
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label>Data</label>
+          <input class="add-input" type="date" id="sm-date" style="width:100%;" />
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label>Hora</label>
+          <input class="add-input" type="time" id="sm-time" style="width:100%;" />
+        </div>
+      </div>
+
+      <div style="font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">Passageiros e bagagem</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+        <div class="form-group" style="margin:0;">
+          <label>Adultos</label>
+          <input class="add-input" type="number" min="0" id="sm-adults" style="width:100%;" />
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label>Crianças</label>
+          <input class="add-input" type="number" min="0" id="sm-children" style="width:100%;" />
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label>Bagagens</label>
+          <input class="add-input" type="number" min="0" id="sm-luggage" style="width:100%;" />
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label>Tipo de veículo</label>
+          <select class="add-input" id="sm-cartype" style="width:100%;">
+            <option value="sedan">Sedan</option>
+            <option value="van">Van</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+        <input type="checkbox" id="sm-child-seat" onchange="toggleSmChildAges()" />
+        <label for="sm-child-seat" style="font-size:13px;cursor:pointer;">Precisa de cadeirinha de criança</label>
+      </div>
+      <div class="form-group" id="sm-child-ages-wrap" style="margin:0 0 12px;display:none;">
+        <label>Idade(s) da(s) criança(s)</label>
+        <input class="add-input" id="sm-child-ages" style="width:100%;" placeholder="ex. 3, 7" />
+      </div>
+
+      <div style="font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">Voo e pagamento</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+        <div class="form-group" style="margin:0;">
+          <label>Nº de voo</label>
+          <input class="add-input" id="sm-flight" style="width:100%;" />
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label>Hora de chegada</label>
+          <input class="add-input" type="time" id="sm-arrival" style="width:100%;" />
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label>Pagamento</label>
+          <select class="add-input" id="sm-payment" style="width:100%;">
+            <option value="driver">Ao motorista</option>
+            <option value="hotel">Ao hotel</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group" style="margin:0;">
+        <label>Notas</label>
+        <textarea class="add-input" id="sm-notes" style="width:100%;min-height:60px;resize:vertical;"></textarea>
+      </div>
+    </div>
 
     <div style="font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">Gestão do serviço</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
@@ -753,6 +849,16 @@ function renderTransfers() {
 // ── SERVICE MODAL ─────────────────────────────────
 let editingServiceId = null;
 
+function toggleSmCustomRoute() {
+  const isCustom = document.getElementById('sm-dir').value === 'custom';
+  document.getElementById('sm-origin-wrap').style.display = isCustom ? 'block' : 'none';
+  document.getElementById('sm-destination-wrap').style.display = isCustom ? 'block' : 'none';
+}
+
+function toggleSmChildAges() {
+  document.getElementById('sm-child-ages-wrap').style.display = document.getElementById('sm-child-seat').checked ? 'block' : 'none';
+}
+
 function openServiceModal(id) {
   const t = transfers.find(x => String(x.id) === String(id));
   if (!t) return;
@@ -761,18 +867,25 @@ function openServiceModal(id) {
   document.getElementById('sm-title').textContent = t.name || '—';
   document.getElementById('sm-subtitle').textContent = t.hotel || '—';
 
-  const rows = [];
-  rows.push(`<div>${dirLabel(t)}</div>`);
-  rows.push(`<div>📅 <strong>${fmtDate(t.date)}</strong> às <strong>${fmtTime(t.time)}</strong></div>`);
-  if (t.phone) rows.push(`<div>📱 ${t.phone}</div>`);
-  rows.push(`<div>👥 ${parseInt(t.adults)||0} adulto(s)${t.children ? ' + ' + t.children + ' criança(s)' : ''}</div>`);
-  if (t.luggage) rows.push(`<div>🧳 ${t.luggage} bagagem(ns)</div>`);
-  if (String(t.child_seat).toUpperCase() === 'TRUE') rows.push(`<div>🪑 Cadeirinha necessária${t.child_ages ? ' — idade(s): ' + t.child_ages : ''}</div>`);
-  rows.push(`<div>${t.car_type === 'van' ? '🚐 Van' : '🚗 Sedan'} (pedido pelo cliente)</div>`);
-  if (t.flight) rows.push(`<div>✈️ Voo ${t.flight}${t.arrival ? ' — chegada ' + fmtTime(t.arrival) : ''}</div>`);
-  rows.push(`<div>💳 Pagamento ${t.payment === 'driver' ? 'ao motorista' : 'ao hotel'}</div>`);
-  if (t.notes) rows.push(`<div>📝 ${t.notes}</div>`);
-  document.getElementById('sm-details').innerHTML = rows.join('');
+  document.getElementById('sm-name').value = t.name || '';
+  document.getElementById('sm-phone').value = t.phone || '';
+  document.getElementById('sm-dir').value = t.dir || 'h2a';
+  document.getElementById('sm-origin').value = t.origin || '';
+  document.getElementById('sm-destination').value = t.destination || '';
+  toggleSmCustomRoute();
+  document.getElementById('sm-date').value = t.date ? t.date.split('T')[0] : '';
+  document.getElementById('sm-time').value = t.time || '';
+  document.getElementById('sm-adults').value = t.adults || 0;
+  document.getElementById('sm-children').value = t.children || 0;
+  document.getElementById('sm-luggage').value = t.luggage || 0;
+  document.getElementById('sm-cartype').value = t.car_type === 'van' ? 'van' : 'sedan';
+  document.getElementById('sm-child-seat').checked = String(t.child_seat).toUpperCase() === 'TRUE';
+  document.getElementById('sm-child-ages').value = t.child_ages || '';
+  toggleSmChildAges();
+  document.getElementById('sm-flight').value = t.flight || '';
+  document.getElementById('sm-arrival').value = t.arrival || '';
+  document.getElementById('sm-payment').value = t.payment === 'hotel' ? 'hotel' : 'driver';
+  document.getElementById('sm-notes').value = t.notes || '';
 
   const driverOpts = drivers.map(d => `<option value="${d.id}" ${String(t.driver) === String(d.id) ? 'selected' : ''}>${d.name}</option>`).join('');
   const vehicleOpts = vehicles.map(v => `<option value="${v.id}" ${String(t.vehicle) === String(v.id) ? 'selected' : ''}>${v.name}</option>`).join('');
@@ -797,15 +910,33 @@ async function saveServiceModal() {
   btn.disabled = true;
   btn.textContent = 'A guardar…';
 
-  const driverVal = document.getElementById('sm-driver').value;
-  const vehicleVal = document.getElementById('sm-vehicle').value;
-  const statusVal = document.getElementById('sm-status').value;
-  const priceVal = document.getElementById('sm-price').value;
+  const dirVal = document.getElementById('sm-dir').value;
+  const payload = {
+    id,
+    name: document.getElementById('sm-name').value.trim(),
+    phone: document.getElementById('sm-phone').value.trim(),
+    dir: dirVal,
+    origin: dirVal === 'custom' ? document.getElementById('sm-origin').value.trim() : '',
+    destination: dirVal === 'custom' ? document.getElementById('sm-destination').value.trim() : '',
+    date: document.getElementById('sm-date').value,
+    time: document.getElementById('sm-time').value,
+    adults: document.getElementById('sm-adults').value,
+    children: document.getElementById('sm-children').value,
+    luggage: document.getElementById('sm-luggage').value,
+    car_type: document.getElementById('sm-cartype').value,
+    child_seat: document.getElementById('sm-child-seat').checked,
+    child_ages: document.getElementById('sm-child-seat').checked ? document.getElementById('sm-child-ages').value.trim() : '',
+    flight: document.getElementById('sm-flight').value.trim(),
+    arrival: document.getElementById('sm-arrival').value,
+    payment: document.getElementById('sm-payment').value,
+    notes: document.getElementById('sm-notes').value.trim(),
+    driver: document.getElementById('sm-driver').value,
+    vehicle: document.getElementById('sm-vehicle').value,
+    status: document.getElementById('sm-status').value,
+    price: document.getElementById('sm-price').value,
+  };
 
-  const res = await fetch(`${API}?type=transfers`, {
-    method: 'PUT',
-    body: JSON.stringify({ id, driver: driverVal, vehicle: vehicleVal, status: statusVal, price: priceVal })
-  });
+  const res = await fetch(`${API}?type=transfers`, { method: 'PUT', body: JSON.stringify(payload) });
 
   btn.disabled = false;
   btn.textContent = 'Guardar';
