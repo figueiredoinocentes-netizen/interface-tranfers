@@ -578,6 +578,15 @@ function fmtDate(d) {
   return `${day}/${m}/${y}`;
 }
 function fmtTime(t) { return t ? t.slice(0,5) : '—'; }
+// Always resolve the partner's current name via partner_id — falls back to the
+// stored 'hotel' snapshot only for legacy transfers created before partner_id existed.
+function partnerName(t) {
+  if (t.partner_id) {
+    const p = partners.find(x => String(x.id) === String(t.partner_id));
+    if (p) return p.name;
+  }
+  return t.hotel || '—';
+}
 function dirLabel(t) {
   if (t.dir === 'custom') return '<span class="dir-badge dir-a2h">' + (t.origin||'—') + ' → ' + (t.destination||'—') + '</span>';
   if (t.dir === 'h2a') return '<span class="dir-badge dir-h2a">Hotel → Aeroporto</span>';
@@ -652,7 +661,7 @@ function renderCalendar() {
       const color = statusColor(t.status);
       const icon = t.dir === 'custom' ? '📍' : (t.dir === 'a2h' ? '✈→🏨' : '🏨→✈');
       const carIcon = t.car_type === 'van' ? '🚐' : '🚗';
-      html += `<div title="${t.name} — ${t.hotel} — ${statusLabel(t.status)}" onclick="openServiceModal('${t.id}')" class="cal-event" style="cursor:pointer;font-size:10px;background:${color}22;color:${color};border-radius:4px;padding:2px 5px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:background 0.15s;">`;
+      html += `<div title="${t.name} — ${partnerName(t)} — ${statusLabel(t.status)}" onclick="openServiceModal('${t.id}')" class="cal-event" style="cursor:pointer;font-size:10px;background:${color}22;color:${color};border-radius:4px;padding:2px 5px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:background 0.15s;">`;
       html += `${icon} ${carIcon} ${fmtTime(t.time)} ${t.name}</div>`;
     });
 
@@ -834,7 +843,7 @@ function renderTransfers() {
     return `<tr class="service-row" style="cursor:pointer;border-left:3px solid ${border};" onclick="openServiceModal('${t.id}')">
       <td>
         <div class="cell-name">${t.name || '—'}</div>
-        <div class="cell-hotel">${t.hotel || '—'}</div>
+        <div class="cell-hotel">${partnerName(t)}</div>
       </td>
       <td>${dirLabel(t)}</td>
       <td>${t.car_type === 'van' ? '🚐 Van' : '🚗 Sedan'}</td>
@@ -865,7 +874,7 @@ function openServiceModal(id) {
   editingServiceId = id;
 
   document.getElementById('sm-title').textContent = t.name || '—';
-  document.getElementById('sm-subtitle').textContent = t.hotel || '—';
+  document.getElementById('sm-subtitle').textContent = partnerName(t);
 
   document.getElementById('sm-name').value = t.name || '';
   document.getElementById('sm-phone').value = t.phone || '';
