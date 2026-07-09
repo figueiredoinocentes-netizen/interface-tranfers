@@ -783,6 +783,13 @@ const _slug = new URLSearchParams(location.search).get('parceiro') || new URLSea
 let HOTEL = _slug; // placeholder until API responds
 let PARTNER_ID = null;
 let PARTNER_PRICING = null;
+let DRIVERS = [];
+
+function driverName(id) {
+  if (!id) return '';
+  const d = DRIVERS.find(x => String(x.id) === String(id));
+  return d ? d.name : '';
+}
 
 async function initHotelName() {
   try {
@@ -1092,7 +1099,10 @@ async function loadPanel() {
   const list = document.getElementById('transfers-list');
   list.innerHTML = '<div class="empty"><span class="empty-icon">⏳</span>A carregar…</div>';
   await hotelReady; // ensure PARTNER_ID/HOTEL are resolved before filtering
-  const all = await apiGet();
+  const [all] = await Promise.all([
+    apiGet(),
+    fetch(`${API}?type=drivers`).then(r => r.json()).then(d => { DRIVERS = Array.isArray(d) ? d : []; }).catch(() => {}),
+  ]);
   // filter to only show transfers belonging to this partner
   transfers = all.filter(t => {
     if (PARTNER_ID && t.partner_id) return String(t.partner_id) === String(PARTNER_ID);
@@ -1190,7 +1200,7 @@ function renderPanel() {
           (isChildSeat(t.child_seat) && t.child_ages ? '<div style="grid-column:1/-1">🪑 Idade(s) da(s) criança(s): <strong>' + t.child_ages + '</strong></div>' : '') +
           (t.flight ? '<div>✈️ Voo <strong>' + t.flight + '</strong>' + (t.arrival ? ' — chegada <strong>' + fmtTime(t.arrival) + '</strong>' : '') + '</div>' : '') +
           (t.notes ? '<div style="grid-column:1/-1">📝 ' + t.notes + '</div>' : '') +
-          ((!pending && t.driver) ? '<div style="grid-column:1/-1">🚗 Motorista: <strong>' + t.driver + '</strong></div>' : '') +
+          ((!pending && t.driver && driverName(t.driver)) ? '<div style="grid-column:1/-1">🚗 Motorista: <strong>' + driverName(t.driver) + '</strong></div>' : '') +
         '</div>' +
         (pending ?
           '<div class="card-actions">' +
