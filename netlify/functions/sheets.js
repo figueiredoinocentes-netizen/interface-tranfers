@@ -43,7 +43,7 @@ const SHEETS = {
   vehicles:  { name: 'Viaturas',   headers: ['id','name','active'] },
   partners:  { name: 'Parceiros',  headers: ['id','slug','name'] },
   // one row per partner; 'id' holds the partner's id (1:1 relationship)
-  pricing:   { name: 'Precos', headers: ['id','price_h2a_sedan','price_h2a_van','price_a2h_sedan','price_a2h_van'] },
+  pricing:   { name: 'Precos', headers: ['id','price_h2a_sedan','price_h2a_van','price_a2h_sedan','price_a2h_van','commission_percent'] },
 };
 
 function getAuth() {
@@ -148,7 +148,7 @@ exports.handler = async (event) => {
       } else if (type === 'partners') {
         newRow = [newId, body.slug || '', body.name || ''];
       } else if (type === 'pricing') {
-        newRow = [newId, body.price_h2a_sedan || '', body.price_h2a_van || '', body.price_a2h_sedan || '', body.price_a2h_van || ''];
+        newRow = [newId, body.price_h2a_sedan || '', body.price_h2a_van || '', body.price_a2h_sedan || '', body.price_a2h_van || '', body.commission_percent || ''];
       }
 
       await sheets.spreadsheets.values.append({
@@ -177,7 +177,7 @@ exports.handler = async (event) => {
       const updatableFields = type === 'transfers'
         ? ['hotel','dir','name','adults','children','luggage','child_seat','payment','date','time','flight','arrival','notes','status','driver','vehicle','car_type','child_ages','phone','price','origin','destination']
         : type === 'pricing'
-        ? ['price_h2a_sedan','price_h2a_van','price_a2h_sedan','price_a2h_van']
+        ? ['price_h2a_sedan','price_h2a_van','price_a2h_sedan','price_a2h_van','commission_percent']
         : type === 'partners'
         ? ['name']
         : ['name','phone','active'];

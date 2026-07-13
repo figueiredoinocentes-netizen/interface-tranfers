@@ -249,6 +249,7 @@
     <button class="tab" onclick="switchTab('equipa')">Motoristas & Viaturas</button>
     <button class="tab" onclick="switchTab('calendario')">Calendário</button>
     <button class="tab" onclick="switchTab('parceiros')">Parceiros</button>
+    <button class="tab" onclick="switchTab('dashboard')">Dashboard</button>
   </div>
 </div>
 
@@ -370,6 +371,57 @@
         <input class="add-input" id="new-partner-name" placeholder="Nome do hotel" style="flex:1;" />
         <button class="btn-add" onclick="addPartner()">Adicionar</button>
       </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="page-dashboard" class="page">
+  <div class="page-header">
+    <div class="page-header-icon">📊</div>
+    <div>
+      <div class="page-header-title">Dashboard</div>
+      <div class="page-header-sub">Faturação e comissões</div>
+    </div>
+  </div>
+  <div style="padding:24px;max-width:1100px;margin:0 auto;">
+
+    <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <div style="display:flex;gap:8px;">
+        <button class="filter-btn active" id="dash-period-semanal" onclick="setDashPeriod('semanal')">Semanal</button>
+        <button class="filter-btn" id="dash-period-mensal" onclick="setDashPeriod('mensal')">Mensal</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <button onclick="dashPrev()" style="background:none;border:1px solid var(--border);color:var(--text);padding:6px 12px;border-radius:6px;cursor:pointer;">‹</button>
+        <span id="dash-period-label" style="font-size:14px;font-weight:600;min-width:180px;text-align:center;"></span>
+        <button onclick="dashNext()" style="background:none;border:1px solid var(--border);color:var(--text);padding:6px 12px;border-radius:6px;cursor:pointer;">›</button>
+      </div>
+      <select class="add-input" id="dash-scope" onchange="setDashScope(this.value)" style="min-width:200px;">
+        <option value="geral">Todos os parceiros</option>
+      </select>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px;">
+      <div class="team-card" style="padding:18px 20px;">
+        <div style="font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Valor faturado</div>
+        <div style="font-size:26px;font-weight:600;" id="dash-total-revenue">€0.00</div>
+      </div>
+      <div class="team-card" style="padding:18px 20px;">
+        <div style="font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Comissão parceiro</div>
+        <div style="font-size:26px;font-weight:600;color:#3B6D11;" id="dash-total-partner">€0.00</div>
+      </div>
+      <div class="team-card" style="padding:18px 20px;">
+        <div style="font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Comissão Vianta</div>
+        <div style="font-size:26px;font-weight:600;color:#B8913A;" id="dash-total-vianta">€0.00</div>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table class="transfers-table" id="dash-table">
+        <thead id="dash-table-head"></thead>
+        <tbody id="dash-table-body"></tbody>
+      </table>
     </div>
 
   </div>
@@ -553,6 +605,13 @@
       </div>
     </div>
 
+    <div style="font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin:20px 0 10px;">Comissão</div>
+    <div class="form-group" style="margin:0;">
+      <label>Comissão do parceiro (%)</label>
+      <input class="add-input" type="number" min="0" max="100" step="0.1" id="pm-commission" style="width:100%;" placeholder="ex. 15" />
+      <div style="font-size:11px;color:var(--muted);margin-top:4px;">% do preço de cada serviço que fica para o parceiro. O restante é a comissão da Vianta.</div>
+    </div>
+
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:22px;">
       <button onclick="closePartnerModal()" style="background:transparent;border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 16px;cursor:pointer;font-family:inherit;font-size:13px;">Cancelar</button>
       <button class="btn-add" id="pm-save-btn" onclick="savePartnerModal()">Guardar</button>
@@ -595,12 +654,11 @@ function dirLabel(t) {
 
 // ── TAB ──────────────────────────────────────────
 function switchTab(t) {
-  document.querySelectorAll('.tab').forEach((b, i) => b.classList.toggle('active',
-    (t === 'servicos' && i === 0) || (t === 'equipa' && i === 1) ||
-    (t === 'calendario' && i === 2) || (t === 'parceiros' && i === 3)));
-  ['servicos','equipa','calendario','parceiros'].forEach(id =>
-    document.getElementById('page-' + id).classList.toggle('active', t === id));
+  const order = ['servicos','equipa','calendario','parceiros','dashboard'];
+  document.querySelectorAll('.tab').forEach((b, i) => b.classList.toggle('active', order[i] === t));
+  order.forEach(id => document.getElementById('page-' + id).classList.toggle('active', t === id));
   if (t === 'calendario') renderCalendar();
+  if (t === 'dashboard') renderDashboard();
 }
 
 // ── CALENDAR ─────────────────────────────────────
@@ -741,6 +799,7 @@ function openPartnerModal(id) {
   document.getElementById('pm-price-h2a-van').value = pr.price_h2a_van || '';
   document.getElementById('pm-price-a2h-sedan').value = pr.price_a2h_sedan || '';
   document.getElementById('pm-price-a2h-van').value = pr.price_a2h_van || '';
+  document.getElementById('pm-commission').value = pr.commission_percent || '';
 
   document.getElementById('partner-modal').style.display = 'flex';
 }
@@ -767,6 +826,7 @@ async function savePartnerModal() {
     price_h2a_van: document.getElementById('pm-price-h2a-van').value,
     price_a2h_sedan: document.getElementById('pm-price-a2h-sedan').value,
     price_a2h_van: document.getElementById('pm-price-a2h-van').value,
+    commission_percent: document.getElementById('pm-commission').value,
   };
 
   await fetch(`${API}?type=partners`, { method: 'PUT', body: JSON.stringify({ id, name }) });
@@ -825,6 +885,125 @@ async function removePartnerFromModal() {
   const id = editingPartnerId;
   closePartnerModal();
   await removePartner(id);
+}
+
+// ── DASHBOARD ──────────────────────────────────────
+let dashPeriodType = 'semanal';
+let dashScope = 'geral';
+let dashRefDate = new Date();
+
+function setDashPeriod(type) {
+  dashPeriodType = type;
+  document.getElementById('dash-period-semanal').classList.toggle('active', type === 'semanal');
+  document.getElementById('dash-period-mensal').classList.toggle('active', type === 'mensal');
+  renderDashboard();
+}
+
+function setDashScope(scope) {
+  dashScope = scope;
+  renderDashboard();
+}
+
+function dashPrev() {
+  if (dashPeriodType === 'semanal') dashRefDate.setDate(dashRefDate.getDate() - 7);
+  else dashRefDate.setMonth(dashRefDate.getMonth() - 1);
+  renderDashboard();
+}
+function dashNext() {
+  if (dashPeriodType === 'semanal') dashRefDate.setDate(dashRefDate.getDate() + 7);
+  else dashRefDate.setMonth(dashRefDate.getMonth() + 1);
+  renderDashboard();
+}
+
+function getDashRange() {
+  const d = new Date(dashRefDate);
+  if (dashPeriodType === 'semanal') {
+    const day = (d.getDay() + 6) % 7; // Monday = 0
+    const start = new Date(d); start.setDate(d.getDate() - day); start.setHours(0,0,0,0);
+    const end = new Date(start); end.setDate(start.getDate() + 6); end.setHours(23,59,59,999);
+    const label = `${String(start.getDate()).padStart(2,'0')}/${String(start.getMonth()+1).padStart(2,'0')} — ${String(end.getDate()).padStart(2,'0')}/${String(end.getMonth()+1).padStart(2,'0')}`;
+    return { start, end, label };
+  } else {
+    const start = new Date(d.getFullYear(), d.getMonth(), 1);
+    const end = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59, 999);
+    const label = CAL_MONTHS[d.getMonth()] + ' ' + d.getFullYear();
+    return { start, end, label };
+  }
+}
+
+function commissionPctFor(partnerId) {
+  const pr = pricing.find(x => String(x.id) === String(partnerId));
+  return pr && pr.commission_percent ? parseFloat(pr.commission_percent) : 0;
+}
+
+function populateDashScopeOptions() {
+  const sel = document.getElementById('dash-scope');
+  const current = sel.value;
+  sel.innerHTML = '<option value="geral">Todos os parceiros</option>' +
+    partners.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+  if ([...sel.options].some(o => o.value === current)) sel.value = current;
+}
+
+function renderDashboard() {
+  populateDashScopeOptions();
+  const { start, end, label } = getDashRange();
+  document.getElementById('dash-period-label').textContent = label;
+
+  const inRange = transfers.filter(t => {
+    if (!t.date || t.status === 'cancelado') return false;
+    const td = new Date(t.date);
+    if (td < start || td > end) return false;
+    if (dashScope !== 'geral' && String(t.partner_id) !== String(dashScope)) return false;
+    return true;
+  });
+
+  let totalRevenue = 0, totalPartner = 0, totalVianta = 0;
+  inRange.forEach(t => {
+    const price = parseFloat(t.price) || 0;
+    const pct = commissionPctFor(t.partner_id);
+    const partnerCut = price * pct / 100;
+    totalRevenue += price;
+    totalPartner += partnerCut;
+    totalVianta += (price - partnerCut);
+  });
+
+  document.getElementById('dash-total-revenue').textContent = '€' + totalRevenue.toFixed(2);
+  document.getElementById('dash-total-partner').textContent = '€' + totalPartner.toFixed(2);
+  document.getElementById('dash-total-vianta').textContent = '€' + totalVianta.toFixed(2);
+
+  const thead = document.getElementById('dash-table-head');
+  const tbody = document.getElementById('dash-table-body');
+
+  if (dashScope === 'geral') {
+    thead.innerHTML = '<tr><th>Parceiro</th><th>Nº serviços</th><th>Faturado</th><th>Comissão parceiro</th><th>Comissão Vianta</th></tr>';
+    const byPartner = {};
+    inRange.forEach(t => {
+      const pid = t.partner_id || 'sem-parceiro';
+      if (!byPartner[pid]) byPartner[pid] = { count: 0, revenue: 0, partnerCut: 0, viantaCut: 0 };
+      const price = parseFloat(t.price) || 0;
+      const pct = commissionPctFor(t.partner_id);
+      const cut = price * pct / 100;
+      byPartner[pid].count++;
+      byPartner[pid].revenue += price;
+      byPartner[pid].partnerCut += cut;
+      byPartner[pid].viantaCut += (price - cut);
+    });
+    const rows = Object.entries(byPartner).map(([pid, v]) => {
+      const p = partners.find(x => String(x.id) === String(pid));
+      return `<tr><td>${p ? p.name : '—'}</td><td>${v.count}</td><td>€${v.revenue.toFixed(2)}</td><td>€${v.partnerCut.toFixed(2)}</td><td>€${v.viantaCut.toFixed(2)}</td></tr>`;
+    });
+    tbody.innerHTML = rows.length ? rows.join('') : '<tr><td colspan="5" class="empty">Sem serviços faturados neste período.</td></tr>';
+  } else {
+    thead.innerHTML = '<tr><th>Cliente</th><th>Percurso</th><th>Data</th><th>Preço</th><th>Comissão parceiro</th><th>Comissão Vianta</th></tr>';
+    const sorted = [...inRange].sort((a,b) => a.date.localeCompare(b.date));
+    const rows = sorted.map(t => {
+      const price = parseFloat(t.price) || 0;
+      const pct = commissionPctFor(t.partner_id);
+      const cut = price * pct / 100;
+      return `<tr><td>${t.name || '—'}</td><td>${dirLabel(t)}</td><td>${fmtDate(t.date)}</td><td>€${price.toFixed(2)}</td><td>€${cut.toFixed(2)}</td><td>€${(price-cut).toFixed(2)}</td></tr>`;
+    });
+    tbody.innerHTML = rows.length ? rows.join('') : '<tr><td colspan="6" class="empty">Sem serviços faturados neste período.</td></tr>';
+  }
 }
 
 // ── RENDER TRANSFERS ─────────────────────────────
