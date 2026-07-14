@@ -263,12 +263,17 @@
     </div>
   </div>
   <div class="container">
-    <div class="filters" id="filters">
-      <button class="filter-btn active" onclick="setFilter('pendente', this)">Pendentes</button>
-      <button class="filter-btn" onclick="setFilter('todos', this)">Todos</button>
-      <button class="filter-btn" onclick="setFilter('confirmado', this)">Confirmados</button>
-      <button class="filter-btn" onclick="setFilter('concluido', this)">Concluídos</button>
-      <button class="filter-btn" onclick="setFilter('cancelado', this)">Cancelados</button>
+    <div class="filters" id="filters" style="justify-content:space-between;">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="filter-btn active" onclick="setFilter('pendente', this)">Pendentes</button>
+        <button class="filter-btn" onclick="setFilter('todos', this)">Todos</button>
+        <button class="filter-btn" onclick="setFilter('confirmado', this)">Confirmados</button>
+        <button class="filter-btn" onclick="setFilter('concluido', this)">Concluídos</button>
+        <button class="filter-btn" onclick="setFilter('cancelado', this)">Cancelados</button>
+      </div>
+      <select class="add-input" id="servicos-partner-filter" onchange="setServicosPartnerFilter(this.value)" style="min-width:180px;">
+        <option value="todos">Todos os parceiros</option>
+      </select>
     </div>
     <div class="table-wrap">
       <table class="transfers-table">
@@ -415,6 +420,10 @@
         <div style="font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Comissão Vianta</div>
         <div style="font-size:26px;font-weight:600;color:#B8913A;" id="dash-total-vianta">€0.00</div>
       </div>
+    </div>
+
+    <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
+      <button class="btn-add" onclick="exportDashboardExcel()">Exportar Excel</button>
     </div>
 
     <div class="table-wrap">
@@ -629,6 +638,7 @@
 // all data via Netlify Function → Google Sheets
 
 let transfers = [], drivers = [], vehicles = [], partners = [], pricing = [], currentFilter = 'pendente';
+let servicosPartnerFilter = 'todos';
 const BASE_URL = 'https://vianta-transfers.netlify.app';
 
 function fmtDate(d) {
@@ -731,9 +741,22 @@ function renderCalendar() {
 }
 
 // ── FILTER ───────────────────────────────────────
+function setServicosPartnerFilter(v) {
+  servicosPartnerFilter = v;
+  renderTransfers();
+}
+
+function populateServicosPartnerFilter() {
+  const sel = document.getElementById('servicos-partner-filter');
+  const current = sel.value;
+  sel.innerHTML = '<option value="todos">Todos os parceiros</option>' +
+    partners.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+  if ([...sel.options].some(o => o.value === current)) sel.value = current;
+}
+
 function setFilter(f, btn) {
   currentFilter = f;
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('#filters .filter-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   renderTransfers();
 }
@@ -762,6 +785,7 @@ async function loadAll() {
   vehicles = Array.isArray(ve) ? ve : [];
   partners = Array.isArray(pt) ? pt : [];
   pricing = Array.isArray(pr) ? pr : [];
+  populateServicosPartnerFilter();
   renderTransfers();
   renderDrivers();
   renderVehicles();
@@ -944,6 +968,33 @@ function populateDashScopeOptions() {
   if ([...sel.options].some(o => o.value === current)) sel.value = current;
 }
 
+function exportDashboardExcel() {
+  const table = document.getElementById('dash-table');
+  const rows = Array.from(table.querySelectorAll('tr'));
+  if (!rows.length) { showToast('Sem dados para exportar'); return; }
+
+  const csvRows = rows.map(row =>
+    Array.from(row.querySelectorAll('th, td'))
+      .map(cell => '"' + cell.textContent.trim().replace(/"/g, '""') + '"')
+      .join(';')
+  );
+  const csv = '﻿' + csvRows.join('\r\n'); // BOM for correct accents in Excel
+
+  const { label } = getDashRange();
+  const scopeLabel = dashScope === 'geral' ? 'todos-parceiros' : (partners.find(p => String(p.id) === String(dashScope))?.slug || dashScope);
+  const filename = `dashboard-vianta-${scopeLabel}-${label.replace(/\s|\/|—/g, '-')}.csv`;
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 function renderDashboard() {
   populateDashScopeOptions();
   const { start, end, label } = getDashRange();
@@ -994,15 +1045,16 @@ function renderDashboard() {
     });
     tbody.innerHTML = rows.length ? rows.join('') : '<tr><td colspan="5" class="empty">Sem serviços faturados neste período.</td></tr>';
   } else {
-    thead.innerHTML = '<tr><th>Cliente</th><th>Percurso</th><th>Data</th><th>Preço</th><th>Comissão parceiro</th><th>Comissão Vianta</th></tr>';
+    thead.innerHTML = '<tr><th>Cliente</th><th>Percurso</th><th>Veículo</th><th>Data</th><th>Preço</th><th>Comissão parceiro</th><th>Comissão Vianta</th></tr>';
     const sorted = [...inRange].sort((a,b) => a.date.localeCompare(b.date));
     const rows = sorted.map(t => {
       const price = parseFloat(t.price) || 0;
       const pct = commissionPctFor(t.partner_id);
       const cut = price * pct / 100;
-      return `<tr><td>${t.name || '—'}</td><td>${dirLabel(t)}</td><td>${fmtDate(t.date)}</td><td>€${price.toFixed(2)}</td><td>€${cut.toFixed(2)}</td><td>€${(price-cut).toFixed(2)}</td></tr>`;
+      const vehicleLabel = t.car_type === 'van' ? '🚐 Van' : '🚗 Sedan';
+      return `<tr><td>${t.name || '—'}</td><td>${dirLabel(t)}</td><td>${vehicleLabel}</td><td>${fmtDate(t.date)}</td><td>€${price.toFixed(2)}</td><td>€${cut.toFixed(2)}</td><td>€${(price-cut).toFixed(2)}</td></tr>`;
     });
-    tbody.innerHTML = rows.length ? rows.join('') : '<tr><td colspan="6" class="empty">Sem serviços faturados neste período.</td></tr>';
+    tbody.innerHTML = rows.length ? rows.join('') : '<tr><td colspan="7" class="empty">Sem serviços faturados neste período.</td></tr>';
   }
 }
 
@@ -1010,6 +1062,7 @@ function renderDashboard() {
 function renderTransfers() {
   const tbody = document.getElementById('transfers-tbody');
   let list = currentFilter === 'todos' ? transfers : transfers.filter(t => t.status === currentFilter);
+  if (servicosPartnerFilter !== 'todos') list = list.filter(t => String(t.partner_id) === String(servicosPartnerFilter));
   list = [...list].sort((a, b) => `${b.date} ${b.time}`.localeCompare(`${a.date} ${a.time}`));
 
   if (!list.length) {
