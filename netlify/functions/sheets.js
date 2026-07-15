@@ -15,11 +15,13 @@ async function sendTransferEmail(data, id) {
     `<b>Cliente:</b> ${data.name || '—'}`,
     `<b>Telemóvel:</b> ${data.phone || '—'}`,
     `<b>Data:</b> ${data.date || '—'} ${data.time || ''}`,
-    data.service_type === 'tour' ? null : `<b>Direção:</b> ${data.dir === 'custom' ? (data.origin || '—') + ' → ' + (data.destination || '—') : data.dir === 'a2h' ? 'Aeroporto → Hotel' : 'Hotel → Aeroporto'}`,
+    data.service_type === 'tour'
+      ? `<b>Percurso:</b> ${data.origin || '—'} → ${data.destination || '—'} → ${data.dropoff || '—'}`
+      : `<b>Direção:</b> ${data.dir === 'custom' ? (data.origin || '—') + ' → ' + (data.destination || '—') : data.dir === 'a2h' ? 'Aeroporto → Hotel' : 'Hotel → Aeroporto'}`,
     `<b>Adults:</b> ${data.adults || '0'} | <b>Crianças:</b> ${data.children || '0'}`,
     `<b>Bagagem:</b> ${data.luggage || '0'}`,
     data.service_type === 'tour'
-      ? `<b>Hora de chegada:</b> ${data.tour_arrival || '—'}`
+      ? `<b>Início:</b> ${data.time || '—'} | <b>Fim:</b> ${data.tour_arrival || '—'}`
       : `<b>Voo:</b> ${data.flight || '—'} | <b>Chegada:</b> ${data.arrival || '—'}`,
     `<b>Pagamento:</b> ${data.payment || '—'}`,
     data.child_seat && data.child_ages ? `<b>Idade(s) da(s) criança(s):</b> ${data.child_ages}` : '',
@@ -41,7 +43,7 @@ async function sendTransferEmail(data, id) {
 }
 
 const SHEETS = {
-  transfers: { name: 'Transfers', headers: ['id','hotel','dir','name','adults','children','luggage','child_seat','payment','date','time','flight','arrival','notes','status','driver','vehicle','car_type','partner_id','created_at','child_ages','phone','price','origin','destination','service_type','tour_arrival'] },
+  transfers: { name: 'Transfers', headers: ['id','hotel','dir','name','adults','children','luggage','child_seat','payment','date','time','flight','arrival','notes','status','driver','vehicle','car_type','partner_id','created_at','child_ages','phone','price','origin','destination','service_type','tour_arrival','dropoff'] },
   drivers:   { name: 'Motoristas', headers: ['id','name','phone','active'] },
   vehicles:  { name: 'Viaturas',   headers: ['id','name','active'] },
   partners:  { name: 'Parceiros',  headers: ['id','slug','name'] },
@@ -178,7 +180,7 @@ exports.handler = async (event) => {
 
       const sheetRow = rowIndex + 2;
       const updatableFields = type === 'transfers'
-        ? ['hotel','dir','name','adults','children','luggage','child_seat','payment','date','time','flight','arrival','notes','status','driver','vehicle','car_type','child_ages','phone','price','origin','destination','service_type','tour_arrival']
+        ? ['hotel','dir','name','adults','children','luggage','child_seat','payment','date','time','flight','arrival','notes','status','driver','vehicle','car_type','child_ages','phone','price','origin','destination','service_type','tour_arrival','dropoff']
         : type === 'pricing'
         ? ['price_h2a_sedan','price_h2a_van','price_a2h_sedan','price_a2h_van','commission_percent']
         : type === 'partners'

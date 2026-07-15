@@ -509,33 +509,51 @@
         <select id="ns-partner" onchange="onNsPartnerChange()"></select>
       </div>
 
-      <div class="section-label">Direção do transfer</div>
-      <div class="dir-toggle" style="grid-template-columns:1fr 1fr 1fr;">
-        <button type="button" class="dir-btn selected" id="ns-btn-h2a" onclick="setNsDir('h2a')">
-          <span class="dir-icon">🏨 → ✈️</span>
-          <span class="dir-label">Hotel → Aeroporto</span>
-        </button>
-        <button type="button" class="dir-btn" id="ns-btn-a2h" onclick="setNsDir('a2h')">
-          <span class="dir-icon">✈️ → 🏨</span>
-          <span class="dir-label">Aeroporto → Hotel</span>
-        </button>
-        <button type="button" class="dir-btn" id="ns-btn-custom" onclick="setNsDir('custom')">
-          <span class="dir-icon">📍 → 📍</span>
-          <span class="dir-label">Personalizado</span>
-        </button>
-      </div>
-      <div class="route-pill" id="ns-route-pill-fixed">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--gold);flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        <span id="ns-route-text"><strong id="ns-route-partner-name">—</strong> → Aeroporto de Lisboa</span>
-      </div>
-      <div class="form-row" id="ns-route-custom-fields" style="display:none;">
-        <div class="form-group" style="margin:0;">
-          <label>Partida <span class="req">*</span></label>
-          <input type="text" id="ns-origin" placeholder="ex. Sintra" />
+      <div id="ns-dir-section">
+        <div class="section-label">Direção do transfer</div>
+        <div class="dir-toggle" style="grid-template-columns:1fr 1fr 1fr;">
+          <button type="button" class="dir-btn selected" id="ns-btn-h2a" onclick="setNsDir('h2a')">
+            <span class="dir-icon">🏨 → ✈️</span>
+            <span class="dir-label">Hotel → Aeroporto</span>
+          </button>
+          <button type="button" class="dir-btn" id="ns-btn-a2h" onclick="setNsDir('a2h')">
+            <span class="dir-icon">✈️ → 🏨</span>
+            <span class="dir-label">Aeroporto → Hotel</span>
+          </button>
+          <button type="button" class="dir-btn" id="ns-btn-custom" onclick="setNsDir('custom')">
+            <span class="dir-icon">📍 → 📍</span>
+            <span class="dir-label">Personalizado</span>
+          </button>
         </div>
-        <div class="form-group" style="margin:0;">
+        <div class="route-pill" id="ns-route-pill-fixed">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--gold);flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <span id="ns-route-text"><strong id="ns-route-partner-name">—</strong> → Aeroporto de Lisboa</span>
+        </div>
+        <div class="form-row" id="ns-route-custom-fields" style="display:none;">
+          <div class="form-group" style="margin:0;">
+            <label>Partida <span class="req">*</span></label>
+            <input type="text" id="ns-origin" placeholder="ex. Sintra" />
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label>Destino <span class="req">*</span></label>
+            <input type="text" id="ns-destination" placeholder="ex. Cascais" />
+          </div>
+        </div>
+      </div>
+
+      <div id="ns-tour-route-section" style="display:none;">
+        <div class="section-label">Percurso do tour</div>
+        <div class="form-group" style="margin-top:0;">
+          <label>Local de pickup <span class="req">*</span></label>
+          <input type="text" id="ns-tour-pickup" placeholder="ex. Hotel Onyria" />
+        </div>
+        <div class="form-group">
           <label>Destino <span class="req">*</span></label>
-          <input type="text" id="ns-destination" placeholder="ex. Cascais" />
+          <input type="text" id="ns-tour-destination" placeholder="ex. Sintra" />
+        </div>
+        <div class="form-group">
+          <label>Local de drop off <span class="req">*</span></label>
+          <input type="text" id="ns-tour-dropoff" placeholder="ex. Hotel Onyria" />
         </div>
       </div>
 
@@ -613,7 +631,7 @@
       </div>
 
       <div class="form-group" id="ns-tour-arrival-wrap" style="display:none;">
-        <label id="ns-tour-arrival-label">Hora de chegada</label>
+        <label id="ns-tour-arrival-label">Hora de fim</label>
         <input type="time" id="ns-tour-arrival" />
       </div>
 
@@ -624,7 +642,7 @@
           <input type="date" id="ns-date" />
         </div>
         <div class="form-group" style="margin:0;">
-          <label>Hora de recolha <span class="req">*</span></label>
+          <label id="ns-time-label">Hora de recolha <span class="req">*</span></label>
           <input type="time" id="ns-time" />
         </div>
       </div>
@@ -677,7 +695,7 @@
           </select>
         </div>
         <div class="form-group" id="sm-tour-arrival-wrap" style="margin:0;display:none;">
-          <label>Hora de chegada (tour)</label>
+          <label>Hora de fim</label>
           <input class="add-input" type="time" id="sm-tour-arrival" style="width:100%;" />
         </div>
         <div class="form-group" id="sm-dir-wrap" style="margin:0;">
@@ -688,9 +706,12 @@
             <option value="custom">Personalizado</option>
           </select>
         </div>
-        <div></div>
+        <div class="form-group" id="sm-dropoff-wrap" style="margin:0;display:none;">
+          <label>Local de drop off</label>
+          <input class="add-input" id="sm-dropoff" style="width:100%;" />
+        </div>
         <div class="form-group" id="sm-origin-wrap" style="margin:0;display:none;">
-          <label>Partida</label>
+          <label id="sm-origin-label">Partida</label>
           <input class="add-input" id="sm-origin" style="width:100%;" />
         </div>
         <div class="form-group" id="sm-destination-wrap" style="margin:0;display:none;">
@@ -702,7 +723,7 @@
           <input class="add-input" type="date" id="sm-date" style="width:100%;" />
         </div>
         <div class="form-group" style="margin:0;">
-          <label>Hora</label>
+          <label id="sm-time-label">Hora</label>
           <input class="add-input" type="time" id="sm-time" style="width:100%;" />
         </div>
       </div>
@@ -875,7 +896,7 @@ function partnerName(t) {
   return t.hotel || '—';
 }
 function dirLabel(t) {
-  if (t.service_type === 'tour') return '<span class="dir-badge dir-tour">🗺️ Tour' + (t.tour_arrival ? ' — chegada ' + fmtTime(t.tour_arrival) : '') + '</span>';
+  if (t.service_type === 'tour') return '<span class="dir-badge dir-tour">🗺️ ' + (t.origin||'—') + ' → ' + (t.destination||'—') + ' → ' + (t.dropoff||'—') + '</span>';
   if (t.dir === 'custom') return '<span class="dir-badge dir-a2h">' + (t.origin||'—') + ' → ' + (t.destination||'—') + '</span>';
   if (t.dir === 'h2a') return '<span class="dir-badge dir-h2a">Hotel → Aeroporto</span>';
   return '<span class="dir-badge dir-a2h">Aeroporto → Hotel</span>';
@@ -1321,9 +1342,12 @@ function toggleSmServiceType() {
   document.getElementById('sm-dir-wrap').style.display = isTour ? 'none' : 'block';
   document.getElementById('sm-flight-wrap').style.display = isTour ? 'none' : 'block';
   document.getElementById('sm-arrival-wrap').style.display = isTour ? 'none' : 'block';
+  document.getElementById('sm-dropoff-wrap').style.display = isTour ? 'block' : 'none';
+  document.getElementById('sm-time-label').textContent = isTour ? 'Hora de início' : 'Hora';
+  document.getElementById('sm-origin-label').textContent = isTour ? 'Local de pickup' : 'Partida';
   if (isTour) {
-    document.getElementById('sm-origin-wrap').style.display = 'none';
-    document.getElementById('sm-destination-wrap').style.display = 'none';
+    document.getElementById('sm-origin-wrap').style.display = 'block';
+    document.getElementById('sm-destination-wrap').style.display = 'block';
   } else {
     toggleSmCustomRoute();
   }
@@ -1360,6 +1384,7 @@ function openServiceModal(id) {
   document.getElementById('sm-arrival').value = t.arrival || '';
   document.getElementById('sm-service-type').value = t.service_type === 'tour' ? 'tour' : 'transfer';
   document.getElementById('sm-tour-arrival').value = t.tour_arrival || '';
+  document.getElementById('sm-dropoff').value = t.dropoff || '';
   toggleSmServiceType();
   document.getElementById('sm-payment').value = t.payment === 'hotel' ? 'hotel' : 'driver';
   document.getElementById('sm-notes').value = t.notes || '';
@@ -1388,13 +1413,15 @@ async function saveServiceModal() {
   btn.textContent = 'A guardar…';
 
   const dirVal = document.getElementById('sm-dir').value;
+  const serviceTypeVal = document.getElementById('sm-service-type').value;
   const payload = {
     id,
     name: document.getElementById('sm-name').value.trim(),
     phone: document.getElementById('sm-phone').value.trim(),
     dir: dirVal,
-    origin: dirVal === 'custom' ? document.getElementById('sm-origin').value.trim() : '',
-    destination: dirVal === 'custom' ? document.getElementById('sm-destination').value.trim() : '',
+    origin: serviceTypeVal === 'tour' || dirVal === 'custom' ? document.getElementById('sm-origin').value.trim() : '',
+    destination: serviceTypeVal === 'tour' || dirVal === 'custom' ? document.getElementById('sm-destination').value.trim() : '',
+    dropoff: serviceTypeVal === 'tour' ? document.getElementById('sm-dropoff').value.trim() : '',
     date: document.getElementById('sm-date').value,
     time: document.getElementById('sm-time').value,
     adults: document.getElementById('sm-adults').value,
@@ -1405,8 +1432,8 @@ async function saveServiceModal() {
     child_ages: document.getElementById('sm-child-seat').checked ? document.getElementById('sm-child-ages').value.trim() : '',
     flight: document.getElementById('sm-flight').value.trim(),
     arrival: document.getElementById('sm-arrival').value,
-    service_type: document.getElementById('sm-service-type').value,
-    tour_arrival: document.getElementById('sm-service-type').value === 'tour' ? document.getElementById('sm-tour-arrival').value : '',
+    service_type: serviceTypeVal,
+    tour_arrival: serviceTypeVal === 'tour' ? document.getElementById('sm-tour-arrival').value : '',
     payment: document.getElementById('sm-payment').value,
     notes: document.getElementById('sm-notes').value.trim(),
     driver: document.getElementById('sm-driver').value,
@@ -1438,8 +1465,11 @@ function setNsServiceType(t) {
   document.getElementById('ns-btn-type-transfer').classList.toggle('selected', t === 'transfer');
   document.getElementById('ns-btn-type-tour').classList.toggle('selected', t === 'tour');
   document.getElementById('ns-flight-section').style.display = t === 'tour' ? 'none' : 'block';
+  document.getElementById('ns-dir-section').style.display = t === 'tour' ? 'none' : 'block';
+  document.getElementById('ns-tour-route-section').style.display = t === 'tour' ? 'block' : 'none';
   document.getElementById('ns-tour-arrival-wrap').style.display = t === 'tour' ? 'block' : 'none';
-  document.getElementById('ns-tour-arrival-label').innerHTML = 'Hora de chegada' + (t === 'tour' ? ' <span style="color:var(--gold)">*</span>' : '');
+  document.getElementById('ns-tour-arrival-label').innerHTML = 'Hora de fim' + (t === 'tour' ? ' <span style="color:var(--gold)">*</span>' : '');
+  document.getElementById('ns-time-label').innerHTML = (t === 'tour' ? 'Hora de início' : 'Hora de recolha') + ' <span class="req">*</span>';
 }
 
 function isChildSeatVal(v) { return v === true || String(v).toUpperCase() === 'TRUE'; }
@@ -1526,6 +1556,9 @@ function openNewServiceModal() {
   document.getElementById('ns-phone').value = '';
   document.getElementById('ns-origin').value = '';
   document.getElementById('ns-destination').value = '';
+  document.getElementById('ns-tour-pickup').value = '';
+  document.getElementById('ns-tour-destination').value = '';
+  document.getElementById('ns-tour-dropoff').value = '';
   document.getElementById('ns-adults').value = '';
   document.getElementById('ns-children').value = '';
   document.getElementById('ns-luggage').value = '';
@@ -1563,13 +1596,20 @@ async function saveNewService() {
   const destination = document.getElementById('ns-destination').value.trim();
 
   const tourArrival = document.getElementById('ns-tour-arrival').value;
+  const tourPickup = document.getElementById('ns-tour-pickup').value.trim();
+  const tourDestination = document.getElementById('ns-tour-destination').value.trim();
+  const tourDropoff = document.getElementById('ns-tour-dropoff').value.trim();
 
   if (!p) { showToast('Escolhe o parceiro'); return; }
   if (!name || !adults || !date || !time) { showToast('Preenche todos os campos obrigatórios (*)'); return; }
-  if (nsServiceType === 'tour' && !tourArrival) { showToast('A hora de chegada é obrigatória para Tours'); return; }
-  if (nsServiceType !== 'tour' && nsDir === 'a2h' && !flight) { showToast('Nº de voo é obrigatório para Aeroporto → Hotel'); return; }
-  if (nsDir === 'a2h' && !phone) { showToast('Telemóvel é obrigatório para Aeroporto → Hotel'); return; }
-  if (nsDir === 'custom' && (!origin || !destination)) { showToast('Indica a partida e o destino'); return; }
+  if (nsServiceType === 'tour') {
+    if (!tourPickup || !tourDestination || !tourDropoff) { showToast('Indica o pickup, destino e drop off do tour'); return; }
+    if (!tourArrival) { showToast('A hora de fim é obrigatória para Tours'); return; }
+  } else {
+    if (nsDir === 'a2h' && !flight) { showToast('Nº de voo é obrigatório para Aeroporto → Hotel'); return; }
+    if (nsDir === 'a2h' && !phone) { showToast('Telemóvel é obrigatório para Aeroporto → Hotel'); return; }
+    if (nsDir === 'custom' && (!origin || !destination)) { showToast('Indica a partida e o destino'); return; }
+  }
 
   const childSeat = document.getElementById('ns-child-seat').checked;
   let childAges = [];
@@ -1586,8 +1626,9 @@ async function saveNewService() {
   const payload = {
     id: String(Date.now()), hotel: p.name, partner_id: p.id,
     dir: nsDir,
-    origin: nsDir === 'custom' ? origin : '',
-    destination: nsDir === 'custom' ? destination : '',
+    origin: nsServiceType === 'tour' ? tourPickup : (nsDir === 'custom' ? origin : ''),
+    destination: nsServiceType === 'tour' ? tourDestination : (nsDir === 'custom' ? destination : ''),
+    dropoff: nsServiceType === 'tour' ? tourDropoff : '',
     name, phone,
     adults: parseInt(adults) || 0,
     children: parseInt(document.getElementById('ns-children').value) || 0,

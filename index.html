@@ -617,33 +617,51 @@
       </button>
     </div>
 
-    <div class="section-label">Direção do transfer</div>
-    <div class="dir-toggle" style="grid-template-columns:1fr 1fr 1fr;">
-      <button class="dir-btn selected" id="btn-h2a" onclick="setDir('h2a')">
-        <span class="dir-icon">🏨 → ✈️</span>
-        <span class="dir-label">Hotel → Aeroporto</span>
-      </button>
-      <button class="dir-btn" id="btn-a2h" onclick="setDir('a2h')">
-        <span class="dir-icon">✈️ → 🏨</span>
-        <span class="dir-label">Aeroporto → Hotel</span>
-      </button>
-      <button class="dir-btn" id="btn-custom" onclick="setDir('custom')">
-        <span class="dir-icon">📍 → 📍</span>
-        <span class="dir-label">Personalizado</span>
-      </button>
-    </div>
-    <div class="route-pill" id="route-pill-fixed">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--gold);flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-      <span id="route-text"><strong id="route-hotel-name">Onyria</strong> → Aeroporto de Lisboa</span>
-    </div>
-    <div class="form-row" id="route-custom-fields" style="display:none;">
-      <div class="form-group" style="margin:0;">
-        <label>Partida <span class="req">*</span></label>
-        <input type="text" id="f-origin" placeholder="ex. Sintra" />
+    <div id="dir-section">
+      <div class="section-label">Direção do transfer</div>
+      <div class="dir-toggle" style="grid-template-columns:1fr 1fr 1fr;">
+        <button class="dir-btn selected" id="btn-h2a" onclick="setDir('h2a')">
+          <span class="dir-icon">🏨 → ✈️</span>
+          <span class="dir-label">Hotel → Aeroporto</span>
+        </button>
+        <button class="dir-btn" id="btn-a2h" onclick="setDir('a2h')">
+          <span class="dir-icon">✈️ → 🏨</span>
+          <span class="dir-label">Aeroporto → Hotel</span>
+        </button>
+        <button class="dir-btn" id="btn-custom" onclick="setDir('custom')">
+          <span class="dir-icon">📍 → 📍</span>
+          <span class="dir-label">Personalizado</span>
+        </button>
       </div>
-      <div class="form-group" style="margin:0;">
+      <div class="route-pill" id="route-pill-fixed">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--gold);flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span id="route-text"><strong id="route-hotel-name">Onyria</strong> → Aeroporto de Lisboa</span>
+      </div>
+      <div class="form-row" id="route-custom-fields" style="display:none;">
+        <div class="form-group" style="margin:0;">
+          <label>Partida <span class="req">*</span></label>
+          <input type="text" id="f-origin" placeholder="ex. Sintra" />
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label>Destino <span class="req">*</span></label>
+          <input type="text" id="f-destination" placeholder="ex. Cascais" />
+        </div>
+      </div>
+    </div>
+
+    <div id="tour-route-section" style="display:none;">
+      <div class="section-label">Percurso do tour</div>
+      <div class="form-group" style="margin-top:0;">
+        <label>Local de pickup <span class="req">*</span></label>
+        <input type="text" id="f-tour-pickup" placeholder="ex. Hotel Onyria" />
+      </div>
+      <div class="form-group">
         <label>Destino <span class="req">*</span></label>
-        <input type="text" id="f-destination" placeholder="ex. Cascais" />
+        <input type="text" id="f-tour-destination" placeholder="ex. Sintra" />
+      </div>
+      <div class="form-group">
+        <label>Local de drop off <span class="req">*</span></label>
+        <input type="text" id="f-tour-dropoff" placeholder="ex. Hotel Onyria" />
       </div>
     </div>
 
@@ -689,7 +707,7 @@
         <input type="date" id="f-date" />
       </div>
       <div class="form-group" style="margin:0;">
-        <label>Hora de recolha <span class="req">*</span></label>
+        <label id="time-label">Hora de recolha <span class="req">*</span></label>
         <input type="time" id="f-time" />
       </div>
     </div>
@@ -733,7 +751,7 @@
     </div>
 
     <div class="form-group" id="tour-arrival-wrap" style="display:none;">
-      <label id="tour-arrival-label">Hora de chegada</label>
+      <label id="tour-arrival-label">Hora de fim</label>
       <input type="time" id="f-tour-arrival" />
     </div>
 
@@ -846,8 +864,11 @@ function setServiceType(t) {
   document.getElementById('btn-type-transfer').classList.toggle('selected', t === 'transfer');
   document.getElementById('btn-type-tour').classList.toggle('selected', t === 'tour');
   document.getElementById('flight-section').style.display = t === 'tour' ? 'none' : 'block';
+  document.getElementById('dir-section').style.display = t === 'tour' ? 'none' : 'block';
+  document.getElementById('tour-route-section').style.display = t === 'tour' ? 'block' : 'none';
   document.getElementById('tour-arrival-wrap').style.display = t === 'tour' ? 'block' : 'none';
-  document.getElementById('tour-arrival-label').innerHTML = 'Hora de chegada' + (t === 'tour' ? ' <span style="color:var(--gold)">*</span>' : '');
+  document.getElementById('tour-arrival-label').innerHTML = 'Hora de fim' + (t === 'tour' ? ' <span style="color:var(--gold)">*</span>' : '');
+  document.getElementById('time-label').innerHTML = (t === 'tour' ? 'Hora de início' : 'Hora de recolha') + ' <span class="req">*</span>';
 }
 let transfers = [];
 
@@ -949,24 +970,35 @@ async function submitTransfer() {
     alert('Por favor preenche todos os campos obrigatórios (*).');
     return;
   }
-  if (serviceType !== 'tour' && dir === 'a2h' && !flight) {
-    alert('O número de voo é obrigatório para transfers do Aeroporto para o Hotel.');
-    return;
-  }
-  if (dir === 'a2h' && !phone) {
-    alert('O telemóvel do cliente é obrigatório para transfers do Aeroporto para o Hotel.');
-    return;
-  }
   const origin = document.getElementById('f-origin').value.trim();
   const destination = document.getElementById('f-destination').value.trim();
-  if (dir === 'custom' && (!origin || !destination)) {
-    alert('Por favor indica a partida e o destino do serviço personalizado.');
-    return;
-  }
+  const tourPickup = document.getElementById('f-tour-pickup').value.trim();
+  const tourDestination = document.getElementById('f-tour-destination').value.trim();
+  const tourDropoff = document.getElementById('f-tour-dropoff').value.trim();
   const tourArrival = document.getElementById('f-tour-arrival').value;
-  if (serviceType === 'tour' && !tourArrival) {
-    alert('A hora de chegada é obrigatória para Tours.');
-    return;
+
+  if (serviceType === 'tour') {
+    if (!tourPickup || !tourDestination || !tourDropoff) {
+      alert('Por favor indica o local de pickup, o destino e o local de drop off do tour.');
+      return;
+    }
+    if (!tourArrival) {
+      alert('A hora de fim é obrigatória para Tours.');
+      return;
+    }
+  } else {
+    if (dir === 'a2h' && !flight) {
+      alert('O número de voo é obrigatório para transfers do Aeroporto para o Hotel.');
+      return;
+    }
+    if (dir === 'a2h' && !phone) {
+      alert('O telemóvel do cliente é obrigatório para transfers do Aeroporto para o Hotel.');
+      return;
+    }
+    if (dir === 'custom' && (!origin || !destination)) {
+      alert('Por favor indica a partida e o destino do serviço personalizado.');
+      return;
+    }
   }
 
   const childSeat = document.getElementById('f-child-seat').checked;
@@ -1002,15 +1034,16 @@ async function submitTransfer() {
     status: 'pendente', driver: '',
     partner_id: PARTNER_ID || '',
     price: lookupPrice(dir, carType),
-    origin: dir === 'custom' ? origin : '',
-    destination: dir === 'custom' ? destination : '',
+    origin: serviceType === 'tour' ? tourPickup : (dir === 'custom' ? origin : ''),
+    destination: serviceType === 'tour' ? tourDestination : (dir === 'custom' ? destination : ''),
+    dropoff: serviceType === 'tour' ? tourDropoff : '',
     service_type: serviceType,
     tour_arrival: serviceType === 'tour' ? tourArrival : ''
   };
 
   await apiPost(t);
 
-  ['f-name','f-phone','f-adults','f-children','f-luggage','f-date','f-time','f-flight','f-arrival','f-notes','f-origin','f-destination','f-tour-arrival'].forEach(id => document.getElementById(id).value = '');
+  ['f-name','f-phone','f-adults','f-children','f-luggage','f-date','f-time','f-flight','f-arrival','f-notes','f-origin','f-destination','f-tour-pickup','f-tour-destination','f-tour-dropoff','f-tour-arrival'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('f-child-seat').checked = false;
   toggleChildAges();
   setDir('h2a');
@@ -1113,14 +1146,17 @@ function openCalDetail(id) {
   document.getElementById('cal-detail-title').textContent = t.name || '—';
 
   const rows = [];
-  rows.push(`<div>${t.dir === 'custom' ? '📍 ' + (t.origin||'—') + ' → ' + (t.destination||'—') : (t.dir === 'h2a' ? '🏨 → ✈️ Hotel → Aeroporto' : '✈️ → 🏨 Aeroporto → Hotel')}</div>`);
-  rows.push(`<div>📅 <strong>${fmtDate(t.date)}</strong> às <strong>${fmtTime(t.time)}</strong></div>`);
+  if (t.service_type === 'tour') {
+    rows.push(`<div>🗺️ Tour: <strong>${t.origin||'—'}</strong> → <strong>${t.destination||'—'}</strong> → <strong>${t.dropoff||'—'}</strong></div>`);
+  } else {
+    rows.push(`<div>${t.dir === 'custom' ? '📍 ' + (t.origin||'—') + ' → ' + (t.destination||'—') : (t.dir === 'h2a' ? '🏨 → ✈️ Hotel → Aeroporto' : '✈️ → 🏨 Aeroporto → Hotel')}</div>`);
+  }
+  rows.push(`<div>📅 <strong>${fmtDate(t.date)}</strong> às <strong>${fmtTime(t.time)}</strong>${t.service_type === 'tour' && t.tour_arrival ? ' — fim <strong>' + fmtTime(t.tour_arrival) + '</strong>' : ''}</div>`);
   rows.push(`<div>👥 ${parseInt(t.adults)||0} adulto(s)${t.children ? ' + ' + t.children + ' criança(s)' : ''}</div>`);
   if (t.luggage) rows.push(`<div>🧳 ${t.luggage} bagagem(ns)</div>`);
   if (isChildSeat(t.child_seat)) rows.push(`<div>🪑 Cadeirinha necessária${t.child_ages ? ' — idade(s): ' + t.child_ages : ''}</div>`);
   rows.push(`<div>${t.car_type === 'van' ? '🚐 Van' : '🚗 Sedan'}</div>`);
-  if (t.service_type === 'tour') rows.push(`<div>🗺️ Tour${t.tour_arrival ? ' — chegada ' + fmtTime(t.tour_arrival) : ''}</div>`);
-  if (t.flight) rows.push(`<div>✈️ Voo ${t.flight}${t.arrival ? ' — chegada ' + fmtTime(t.arrival) : ''}</div>`);
+  if (t.service_type !== 'tour' && t.flight) rows.push(`<div>✈️ Voo ${t.flight}${t.arrival ? ' — chegada ' + fmtTime(t.arrival) : ''}</div>`);
   rows.push(`<div>💳 Pagamento ${t.payment === 'driver' ? 'ao motorista' : 'ao hotel'}</div>`);
   if (t.notes) rows.push(`<div>📝 ${t.notes}</div>`);
   rows.push(`<div>📌 Estado: <strong>${calStatusLabel(t.status)}</strong></div>`);
@@ -1236,7 +1272,8 @@ function renderPanel() {
           (t.phone ? '<div>📱 ' + t.phone + '</div>' : '') +
           (t.price ? '<div>💶 ' + parseFloat(t.price).toFixed(2) + ' €</div>' : '') +
           (isChildSeat(t.child_seat) && t.child_ages ? '<div style="grid-column:1/-1">🪑 Idade(s) da(s) criança(s): <strong>' + t.child_ages + '</strong></div>' : '') +
-          (t.service_type === 'tour' ? '<div>🗺️ Tour' + (t.tour_arrival ? ' — chegada <strong>' + fmtTime(t.tour_arrival) + '</strong>' : '') + '</div>' : '') +
+          (t.service_type === 'tour' ? '<div style="grid-column:1/-1">🗺️ Tour: <strong>' + (t.origin||'—') + '</strong> → <strong>' + (t.destination||'—') + '</strong> → <strong>' + (t.dropoff||'—') + '</strong></div>' : '') +
+          (t.service_type === 'tour' && t.tour_arrival ? '<div>🕐 Fim previsto <strong>' + fmtTime(t.tour_arrival) + '</strong></div>' : '') +
           (t.flight ? '<div>✈️ Voo <strong>' + t.flight + '</strong>' + (t.arrival ? ' — chegada <strong>' + fmtTime(t.arrival) + '</strong>' : '') + '</div>' : '') +
           (t.notes ? '<div style="grid-column:1/-1">📝 ' + t.notes + '</div>' : '') +
           ((!pending && t.driver && driverName(t.driver)) ? '<div style="grid-column:1/-1">🚗 Motorista: <strong>' + driverName(t.driver) + '</strong></div>' : '') +
@@ -1268,8 +1305,11 @@ function renderPanel() {
             '<div class="edit-group"><label>Direção</label><select id="e-dir-' + t.id + '"><option value="h2a"' + (t.dir==='h2a'?' selected':'') + '>Hotel → Aeroporto</option><option value="a2h"' + (t.dir==='a2h'?' selected':'') + '>Aeroporto → Hotel</option><option value="custom"' + (t.dir==='custom'?' selected':'') + '>Personalizado</option></select></div>' +
           '</div>' +
           '<div class="edit-row">' +
-            '<div class="edit-group"><label>Partida (se personalizado)</label><input type="text" id="e-origin-' + t.id + '" value="' + (t.origin||'') + '" /></div>' +
-            '<div class="edit-group"><label>Destino (se personalizado)</label><input type="text" id="e-destination-' + t.id + '" value="' + (t.destination||'') + '" /></div>' +
+            '<div class="edit-group"><label>Partida / Pickup</label><input type="text" id="e-origin-' + t.id + '" value="' + (t.origin||'') + '" /></div>' +
+            '<div class="edit-group"><label>Destino</label><input type="text" id="e-destination-' + t.id + '" value="' + (t.destination||'') + '" /></div>' +
+          '</div>' +
+          '<div class="edit-row">' +
+            '<div class="edit-group"><label>Drop off (se tour)</label><input type="text" id="e-dropoff-' + t.id + '" value="' + (t.dropoff||'') + '" /></div>' +
           '</div>' +
           '<div class="edit-row">' +
             '<div class="edit-group"><label>Nº de voo</label><input type="text" id="e-flight-' + t.id + '" value="' + (t.flight||'') + '" /></div>' +
@@ -1337,6 +1377,7 @@ async function saveEdit(id) {
     dir: document.getElementById('e-dir-' + id).value,
     origin: document.getElementById('e-origin-' + id).value.trim(),
     destination: document.getElementById('e-destination-' + id).value.trim(),
+    dropoff: document.getElementById('e-dropoff-' + id).value.trim(),
     flight: document.getElementById('e-flight-' + id).value.trim(),
     arrival: document.getElementById('e-arrival-' + id).value,
     service_type: document.getElementById('e-service-type-' + id).value,
