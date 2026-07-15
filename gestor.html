@@ -269,6 +269,7 @@
   }
   .dir-h2a { background: var(--info-bg); color: var(--info-text); }
   .dir-a2h { background: var(--gold-dim); color: var(--gold); }
+  .dir-tour { background: var(--success-bg); color: var(--success-text); }
 </style>
 </head>
 <body>
@@ -490,6 +491,18 @@
 
     <div class="svc-form">
 
+      <div class="section-label">Tipo de serviço</div>
+      <div class="dir-toggle" style="grid-template-columns:1fr 1fr;">
+        <button type="button" class="dir-btn selected" id="ns-btn-type-transfer" onclick="setNsServiceType('transfer')">
+          <span class="dir-icon">🚗</span>
+          <span class="dir-label">Transfer</span>
+        </button>
+        <button type="button" class="dir-btn" id="ns-btn-type-tour" onclick="setNsServiceType('tour')">
+          <span class="dir-icon">🗺️</span>
+          <span class="dir-label">Tour</span>
+        </button>
+      </div>
+
       <div class="section-label">Parceiro</div>
       <div class="form-group" style="margin-top:0;">
         <label>Parceiro <span class="req">*</span></label>
@@ -585,16 +598,23 @@
         </button>
       </div>
 
-      <div class="section-label">Voo (opcional)</div>
-      <div class="form-row" style="margin-top:0;">
-        <div class="form-group" style="margin:0;">
-          <label id="ns-flight-label">Nº de voo</label>
-          <input type="text" id="ns-flight" placeholder="ex. TP1234" />
+      <div id="ns-flight-section">
+        <div class="section-label">Voo (opcional)</div>
+        <div class="form-row" style="margin-top:0;">
+          <div class="form-group" style="margin:0;">
+            <label id="ns-flight-label">Nº de voo</label>
+            <input type="text" id="ns-flight" placeholder="ex. TP1234" />
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label>Hora de chegada estimada</label>
+            <input type="time" id="ns-arrival" />
+          </div>
         </div>
-        <div class="form-group" style="margin:0;">
-          <label>Hora de chegada estimada</label>
-          <input type="time" id="ns-arrival" />
-        </div>
+      </div>
+
+      <div class="form-group" id="ns-tour-arrival-wrap" style="display:none;">
+        <label id="ns-tour-arrival-label">Hora de chegada</label>
+        <input type="time" id="ns-tour-arrival" />
       </div>
 
       <div class="section-label">Horário</div>
@@ -650,6 +670,17 @@
       <div style="font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">Percurso e horário</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
         <div class="form-group" style="margin:0;">
+          <label>Tipo de serviço</label>
+          <select class="add-input" id="sm-service-type" style="width:100%;" onchange="toggleSmServiceType()">
+            <option value="transfer">Transfer</option>
+            <option value="tour">Tour</option>
+          </select>
+        </div>
+        <div class="form-group" id="sm-tour-arrival-wrap" style="margin:0;display:none;">
+          <label>Hora de chegada (tour)</label>
+          <input class="add-input" type="time" id="sm-tour-arrival" style="width:100%;" />
+        </div>
+        <div class="form-group" id="sm-dir-wrap" style="margin:0;">
           <label>Direção</label>
           <select class="add-input" id="sm-dir" style="width:100%;" onchange="toggleSmCustomRoute()">
             <option value="h2a">Hotel → Aeroporto</option>
@@ -709,11 +740,11 @@
 
       <div style="font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">Voo e pagamento</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
-        <div class="form-group" style="margin:0;">
+        <div class="form-group" id="sm-flight-wrap" style="margin:0;">
           <label>Nº de voo</label>
           <input class="add-input" id="sm-flight" style="width:100%;" />
         </div>
-        <div class="form-group" style="margin:0;">
+        <div class="form-group" id="sm-arrival-wrap" style="margin:0;">
           <label>Hora de chegada</label>
           <input class="add-input" type="time" id="sm-arrival" style="width:100%;" />
         </div>
@@ -844,6 +875,7 @@ function partnerName(t) {
   return t.hotel || '—';
 }
 function dirLabel(t) {
+  if (t.service_type === 'tour') return '<span class="dir-badge dir-tour">🗺️ Tour' + (t.tour_arrival ? ' — chegada ' + fmtTime(t.tour_arrival) : '') + '</span>';
   if (t.dir === 'custom') return '<span class="dir-badge dir-a2h">' + (t.origin||'—') + ' → ' + (t.destination||'—') + '</span>';
   if (t.dir === 'h2a') return '<span class="dir-badge dir-h2a">Hotel → Aeroporto</span>';
   return '<span class="dir-badge dir-a2h">Aeroporto → Hotel</span>';
@@ -914,7 +946,7 @@ function renderCalendar() {
 
     dayTransfers.forEach(t => {
       const color = statusColor(t.status);
-      const icon = t.dir === 'custom' ? '📍' : (t.dir === 'a2h' ? '✈→🏨' : '🏨→✈');
+      const icon = t.service_type === 'tour' ? '🗺️' : (t.dir === 'custom' ? '📍' : (t.dir === 'a2h' ? '✈→🏨' : '🏨→✈'));
       const carIcon = t.car_type === 'van' ? '🚐' : '🚗';
       html += `<div title="${t.name} — ${partnerName(t)} — ${statusLabel(t.status)}" onclick="openServiceModal('${t.id}')" class="cal-event" style="cursor:pointer;font-size:10px;background:${color}22;color:${color};border-radius:4px;padding:2px 5px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:background 0.15s;">`;
       html += `${icon} ${carIcon} ${fmtTime(t.time)} ${t.name}</div>`;
@@ -1283,6 +1315,20 @@ function toggleSmCustomRoute() {
   document.getElementById('sm-destination-wrap').style.display = isCustom ? 'block' : 'none';
 }
 
+function toggleSmServiceType() {
+  const isTour = document.getElementById('sm-service-type').value === 'tour';
+  document.getElementById('sm-tour-arrival-wrap').style.display = isTour ? 'block' : 'none';
+  document.getElementById('sm-dir-wrap').style.display = isTour ? 'none' : 'block';
+  document.getElementById('sm-flight-wrap').style.display = isTour ? 'none' : 'block';
+  document.getElementById('sm-arrival-wrap').style.display = isTour ? 'none' : 'block';
+  if (isTour) {
+    document.getElementById('sm-origin-wrap').style.display = 'none';
+    document.getElementById('sm-destination-wrap').style.display = 'none';
+  } else {
+    toggleSmCustomRoute();
+  }
+}
+
 function toggleSmChildAges() {
   document.getElementById('sm-child-ages-wrap').style.display = document.getElementById('sm-child-seat').checked ? 'block' : 'none';
 }
@@ -1312,6 +1358,9 @@ function openServiceModal(id) {
   toggleSmChildAges();
   document.getElementById('sm-flight').value = t.flight || '';
   document.getElementById('sm-arrival').value = t.arrival || '';
+  document.getElementById('sm-service-type').value = t.service_type === 'tour' ? 'tour' : 'transfer';
+  document.getElementById('sm-tour-arrival').value = t.tour_arrival || '';
+  toggleSmServiceType();
   document.getElementById('sm-payment').value = t.payment === 'hotel' ? 'hotel' : 'driver';
   document.getElementById('sm-notes').value = t.notes || '';
 
@@ -1356,6 +1405,8 @@ async function saveServiceModal() {
     child_ages: document.getElementById('sm-child-seat').checked ? document.getElementById('sm-child-ages').value.trim() : '',
     flight: document.getElementById('sm-flight').value.trim(),
     arrival: document.getElementById('sm-arrival').value,
+    service_type: document.getElementById('sm-service-type').value,
+    tour_arrival: document.getElementById('sm-service-type').value === 'tour' ? document.getElementById('sm-tour-arrival').value : '',
     payment: document.getElementById('sm-payment').value,
     notes: document.getElementById('sm-notes').value.trim(),
     driver: document.getElementById('sm-driver').value,
@@ -1380,6 +1431,16 @@ async function saveServiceModal() {
 let nsDir = 'h2a';
 let nsCarType = 'sedan';
 let nsPayment = 'driver';
+let nsServiceType = 'transfer';
+
+function setNsServiceType(t) {
+  nsServiceType = t;
+  document.getElementById('ns-btn-type-transfer').classList.toggle('selected', t === 'transfer');
+  document.getElementById('ns-btn-type-tour').classList.toggle('selected', t === 'tour');
+  document.getElementById('ns-flight-section').style.display = t === 'tour' ? 'none' : 'block';
+  document.getElementById('ns-tour-arrival-wrap').style.display = t === 'tour' ? 'block' : 'none';
+  document.getElementById('ns-tour-arrival-label').innerHTML = 'Hora de chegada' + (t === 'tour' ? ' <span style="color:var(--gold)">*</span>' : '');
+}
 
 function isChildSeatVal(v) { return v === true || String(v).toUpperCase() === 'TRUE'; }
 
@@ -1471,6 +1532,7 @@ function openNewServiceModal() {
   document.getElementById('ns-child-seat').checked = false;
   document.getElementById('ns-flight').value = '';
   document.getElementById('ns-arrival').value = '';
+  document.getElementById('ns-tour-arrival').value = '';
   document.getElementById('ns-date').value = '';
   document.getElementById('ns-time').value = '';
   document.getElementById('ns-notes').value = '';
@@ -1479,6 +1541,7 @@ function openNewServiceModal() {
   setNsDir('h2a');
   setNsCarType('sedan');
   setNsPayment('driver');
+  setNsServiceType('transfer');
   toggleNsChildAges();
 
   document.getElementById('new-service-modal').style.display = 'flex';
@@ -1499,9 +1562,12 @@ async function saveNewService() {
   const origin = document.getElementById('ns-origin').value.trim();
   const destination = document.getElementById('ns-destination').value.trim();
 
+  const tourArrival = document.getElementById('ns-tour-arrival').value;
+
   if (!p) { showToast('Escolhe o parceiro'); return; }
   if (!name || !adults || !date || !time) { showToast('Preenche todos os campos obrigatórios (*)'); return; }
-  if (nsDir === 'a2h' && !flight) { showToast('Nº de voo é obrigatório para Aeroporto → Hotel'); return; }
+  if (nsServiceType === 'tour' && !tourArrival) { showToast('A hora de chegada é obrigatória para Tours'); return; }
+  if (nsServiceType !== 'tour' && nsDir === 'a2h' && !flight) { showToast('Nº de voo é obrigatório para Aeroporto → Hotel'); return; }
   if (nsDir === 'a2h' && !phone) { showToast('Telemóvel é obrigatório para Aeroporto → Hotel'); return; }
   if (nsDir === 'custom' && (!origin || !destination)) { showToast('Indica a partida e o destino'); return; }
 
@@ -1535,6 +1601,8 @@ async function saveNewService() {
     notes: document.getElementById('ns-notes').value.trim(),
     status: 'pendente', driver: '',
     price: nsLookupPrice(nsDir, nsCarType),
+    service_type: nsServiceType,
+    tour_arrival: nsServiceType === 'tour' ? tourArrival : '',
   };
 
   const res = await fetch(`${API}?type=transfers`, { method: 'POST', body: JSON.stringify(payload) });

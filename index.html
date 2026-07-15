@@ -605,6 +605,18 @@
 
   <div class="container">
 
+    <div class="section-label">Tipo de serviço</div>
+    <div class="dir-toggle" style="grid-template-columns:1fr 1fr;">
+      <button class="dir-btn selected" id="btn-type-transfer" onclick="setServiceType('transfer')">
+        <span class="dir-icon">🚗</span>
+        <span class="dir-label">Transfer</span>
+      </button>
+      <button class="dir-btn" id="btn-type-tour" onclick="setServiceType('tour')">
+        <span class="dir-icon">🗺️</span>
+        <span class="dir-label">Tour</span>
+      </button>
+    </div>
+
     <div class="section-label">Direção do transfer</div>
     <div class="dir-toggle" style="grid-template-columns:1fr 1fr 1fr;">
       <button class="dir-btn selected" id="btn-h2a" onclick="setDir('h2a')">
@@ -706,16 +718,23 @@
       </button>
     </div>
 
-    <div class="section-label">Voo (opcional)</div>
-    <div class="form-row">
-      <div class="form-group" style="margin:0;">
-        <label id="flight-label">Nº de voo</label>
-        <input type="text" id="f-flight" placeholder="ex. TP1234" />
+    <div id="flight-section">
+      <div class="section-label">Voo (opcional)</div>
+      <div class="form-row">
+        <div class="form-group" style="margin:0;">
+          <label id="flight-label">Nº de voo</label>
+          <input type="text" id="f-flight" placeholder="ex. TP1234" />
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label>Hora de chegada estimada</label>
+          <input type="time" id="f-arrival" />
+        </div>
       </div>
-      <div class="form-group" style="margin:0;">
-        <label>Hora de chegada estimada</label>
-        <input type="time" id="f-arrival" />
-      </div>
+    </div>
+
+    <div class="form-group" id="tour-arrival-wrap" style="display:none;">
+      <label id="tour-arrival-label">Hora de chegada</label>
+      <input type="time" id="f-tour-arrival" />
     </div>
 
     <div class="section-label">Notas</div>
@@ -820,6 +839,16 @@ function lookupPrice(dirVal, carTypeVal) {
 let dir = 'h2a';
 let payment = 'driver';
 let carType = 'sedan';
+let serviceType = 'transfer';
+
+function setServiceType(t) {
+  serviceType = t;
+  document.getElementById('btn-type-transfer').classList.toggle('selected', t === 'transfer');
+  document.getElementById('btn-type-tour').classList.toggle('selected', t === 'tour');
+  document.getElementById('flight-section').style.display = t === 'tour' ? 'none' : 'block';
+  document.getElementById('tour-arrival-wrap').style.display = t === 'tour' ? 'block' : 'none';
+  document.getElementById('tour-arrival-label').innerHTML = 'Hora de chegada' + (t === 'tour' ? ' <span style="color:var(--gold)">*</span>' : '');
+}
 let transfers = [];
 
 // ── Sheets API ─────────────────────────────────────────────────
@@ -920,7 +949,7 @@ async function submitTransfer() {
     alert('Por favor preenche todos os campos obrigatórios (*).');
     return;
   }
-  if (dir === 'a2h' && !flight) {
+  if (serviceType !== 'tour' && dir === 'a2h' && !flight) {
     alert('O número de voo é obrigatório para transfers do Aeroporto para o Hotel.');
     return;
   }
@@ -932,6 +961,11 @@ async function submitTransfer() {
   const destination = document.getElementById('f-destination').value.trim();
   if (dir === 'custom' && (!origin || !destination)) {
     alert('Por favor indica a partida e o destino do serviço personalizado.');
+    return;
+  }
+  const tourArrival = document.getElementById('f-tour-arrival').value;
+  if (serviceType === 'tour' && !tourArrival) {
+    alert('A hora de chegada é obrigatória para Tours.');
     return;
   }
 
@@ -969,17 +1003,20 @@ async function submitTransfer() {
     partner_id: PARTNER_ID || '',
     price: lookupPrice(dir, carType),
     origin: dir === 'custom' ? origin : '',
-    destination: dir === 'custom' ? destination : ''
+    destination: dir === 'custom' ? destination : '',
+    service_type: serviceType,
+    tour_arrival: serviceType === 'tour' ? tourArrival : ''
   };
 
   await apiPost(t);
 
-  ['f-name','f-phone','f-adults','f-children','f-luggage','f-date','f-time','f-flight','f-arrival','f-notes','f-origin','f-destination'].forEach(id => document.getElementById(id).value = '');
+  ['f-name','f-phone','f-adults','f-children','f-luggage','f-date','f-time','f-flight','f-arrival','f-notes','f-origin','f-destination','f-tour-arrival'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('f-child-seat').checked = false;
   toggleChildAges();
   setDir('h2a');
   setPayment('driver');
   setCarType('sedan');
+  setServiceType('transfer');
 
   btn.textContent = 'Enviar pedido';
   btn.disabled = false;
@@ -1056,7 +1093,7 @@ function renderCalendar() {
 
     dayTransfers.forEach(t => {
       const color = calStatusColor(t.status);
-      const icon = t.dir === 'custom' ? '📍' : (t.dir === 'a2h' ? '✈→🏨' : '🏨→✈');
+      const icon = t.service_type === 'tour' ? '🗺️' : (t.dir === 'custom' ? '📍' : (t.dir === 'a2h' ? '✈→🏨' : '🏨→✈'));
       const carIcon = t.car_type === 'van' ? '🚐' : '🚗';
       html += `<div title="${t.name} — ${calStatusLabel(t.status)}" onclick="openCalDetail('${t.id}')" class="cal-event" style="font-size:10px;background:${color}22;color:${color};border-radius:4px;padding:2px 5px;margin-bottom:2px;">`;
       html += `${icon} ${carIcon} ${fmtTime(t.time)} ${t.name}</div>`;
@@ -1082,6 +1119,7 @@ function openCalDetail(id) {
   if (t.luggage) rows.push(`<div>🧳 ${t.luggage} bagagem(ns)</div>`);
   if (isChildSeat(t.child_seat)) rows.push(`<div>🪑 Cadeirinha necessária${t.child_ages ? ' — idade(s): ' + t.child_ages : ''}</div>`);
   rows.push(`<div>${t.car_type === 'van' ? '🚐 Van' : '🚗 Sedan'}</div>`);
+  if (t.service_type === 'tour') rows.push(`<div>🗺️ Tour${t.tour_arrival ? ' — chegada ' + fmtTime(t.tour_arrival) : ''}</div>`);
   if (t.flight) rows.push(`<div>✈️ Voo ${t.flight}${t.arrival ? ' — chegada ' + fmtTime(t.arrival) : ''}</div>`);
   rows.push(`<div>💳 Pagamento ${t.payment === 'driver' ? 'ao motorista' : 'ao hotel'}</div>`);
   if (t.notes) rows.push(`<div>📝 ${t.notes}</div>`);
@@ -1198,6 +1236,7 @@ function renderPanel() {
           (t.phone ? '<div>📱 ' + t.phone + '</div>' : '') +
           (t.price ? '<div>💶 ' + parseFloat(t.price).toFixed(2) + ' €</div>' : '') +
           (isChildSeat(t.child_seat) && t.child_ages ? '<div style="grid-column:1/-1">🪑 Idade(s) da(s) criança(s): <strong>' + t.child_ages + '</strong></div>' : '') +
+          (t.service_type === 'tour' ? '<div>🗺️ Tour' + (t.tour_arrival ? ' — chegada <strong>' + fmtTime(t.tour_arrival) + '</strong>' : '') + '</div>' : '') +
           (t.flight ? '<div>✈️ Voo <strong>' + t.flight + '</strong>' + (t.arrival ? ' — chegada <strong>' + fmtTime(t.arrival) + '</strong>' : '') + '</div>' : '') +
           (t.notes ? '<div style="grid-column:1/-1">📝 ' + t.notes + '</div>' : '') +
           ((!pending && t.driver && driverName(t.driver)) ? '<div style="grid-column:1/-1">🚗 Motorista: <strong>' + driverName(t.driver) + '</strong></div>' : '') +
@@ -1234,7 +1273,11 @@ function renderPanel() {
           '</div>' +
           '<div class="edit-row">' +
             '<div class="edit-group"><label>Nº de voo</label><input type="text" id="e-flight-' + t.id + '" value="' + (t.flight||'') + '" /></div>' +
-            '<div class="edit-group"><label>Hora de chegada</label><input type="time" id="e-arrival-' + t.id + '" value="' + extractTime(t.arrival) + '" /></div>' +
+            '<div class="edit-group"><label>Hora de chegada (voo)</label><input type="time" id="e-arrival-' + t.id + '" value="' + extractTime(t.arrival) + '" /></div>' +
+          '</div>' +
+          '<div class="edit-row">' +
+            '<div class="edit-group"><label>Tipo de serviço</label><select id="e-service-type-' + t.id + '"><option value="transfer"' + (t.service_type!=='tour'?' selected':'') + '>Transfer</option><option value="tour"' + (t.service_type==='tour'?' selected':'') + '>Tour</option></select></div>' +
+            '<div class="edit-group"><label>Hora de chegada (tour)</label><input type="time" id="e-tour-arrival-' + t.id + '" value="' + (t.tour_arrival||'') + '" /></div>' +
           '</div>' +
           '<div class="edit-row">' +
             '<div class="edit-group"><label>Pagamento</label><select id="e-payment-' + t.id + '"><option value="driver"' + (t.payment==='driver'?' selected':'') + '>Ao motorista</option><option value="hotel"' + (t.payment==='hotel'?' selected':'') + '>Ao hotel</option></select></div>' +
@@ -1296,6 +1339,8 @@ async function saveEdit(id) {
     destination: document.getElementById('e-destination-' + id).value.trim(),
     flight: document.getElementById('e-flight-' + id).value.trim(),
     arrival: document.getElementById('e-arrival-' + id).value,
+    service_type: document.getElementById('e-service-type-' + id).value,
+    tour_arrival: document.getElementById('e-tour-arrival-' + id).value,
     payment: document.getElementById('e-payment-' + id).value,
     car_type: document.getElementById('e-car-type-' + id).value,
     notes: document.getElementById('e-notes-' + id).value.trim(),
