@@ -730,7 +730,7 @@
         </div>
       </div>
 
-      <div class="form-row" style="grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+      <div class="form-row" id="sm-datetime-row" style="grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
         <div class="form-group" style="margin:0;">
           <label>Data</label>
           <input class="add-input" type="date" id="sm-date" style="width:100%;" />
@@ -1355,6 +1355,7 @@ function toggleSmCustomRoute() {
 function toggleSmServiceType() {
   const isTour = document.getElementById('sm-service-type').value === 'tour';
   document.getElementById('sm-tour-arrival-wrap').style.display = isTour ? 'block' : 'none';
+  document.getElementById('sm-datetime-row').style.gridTemplateColumns = isTour ? '1fr 1fr 1fr' : '1fr 1fr';
   document.getElementById('sm-transfer-route-section').style.display = isTour ? 'none' : 'block';
   document.getElementById('sm-tour-route-section').style.display = isTour ? 'block' : 'none';
   document.getElementById('sm-flight-wrap').style.display = isTour ? 'none' : 'block';
