@@ -4,8 +4,8 @@ const SHEET_ID = '1fwGueaZ3otmqO1IODXDv7qe3NayQson1ICgnQHBJc0E';
 
 async function sendTransferEmail(data, id) {
   const apiKey = process.env.RESEND_API_KEY;
-  const to = process.env.MANAGER_EMAIL;
-  if (!apiKey || !to) return;
+  const to = [process.env.MANAGER_EMAIL, 'pedro.inoc.rosa@gmail.com'].filter(Boolean);
+  if (!apiKey || !to.length) return;
 
   const lines = [
     `<b>Novo ${data.service_type === 'tour' ? 'tour' : 'transfer'} recebido</b>`,
@@ -35,7 +35,7 @@ async function sendTransferEmail(data, id) {
     headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       from: 'Vianta Transfers <onboarding@resend.dev>',
-      to: [to],
+      to,
       subject: `Novo transfer — ${data.hotel || ''} ${data.date || ''}`,
       html: `<div style="font-family:sans-serif;font-size:14px;line-height:1.6">${lines}</div>`,
     }),
