@@ -686,19 +686,16 @@
       </div>
 
       <div style="font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">Percurso e horário</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
-        <div class="form-group" style="margin:0;">
-          <label>Tipo de serviço</label>
-          <select class="add-input" id="sm-service-type" style="width:100%;" onchange="toggleSmServiceType()">
-            <option value="transfer">Transfer</option>
-            <option value="tour">Tour</option>
-          </select>
-        </div>
-        <div class="form-group" id="sm-tour-arrival-wrap" style="margin:0;display:none;">
-          <label>Hora de fim</label>
-          <input class="add-input" type="time" id="sm-tour-arrival" style="width:100%;" />
-        </div>
-        <div class="form-group" id="sm-dir-wrap" style="margin:0;">
+      <div class="form-group" style="margin-top:0;margin-bottom:12px;">
+        <label>Tipo de serviço</label>
+        <select class="add-input" id="sm-service-type" style="width:100%;" onchange="toggleSmServiceType()">
+          <option value="transfer">Transfer</option>
+          <option value="tour">Tour</option>
+        </select>
+      </div>
+
+      <div id="sm-transfer-route-section" style="margin-bottom:12px;">
+        <div class="form-group" style="margin-top:0;">
           <label>Direção</label>
           <select class="add-input" id="sm-dir" style="width:100%;" onchange="toggleSmCustomRoute()">
             <option value="h2a">Hotel → Aeroporto</option>
@@ -706,18 +703,34 @@
             <option value="custom">Personalizado</option>
           </select>
         </div>
-        <div class="form-group" id="sm-dropoff-wrap" style="margin:0;display:none;">
+        <div class="form-row" id="sm-custom-route-fields" style="display:none;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;">
+          <div class="form-group" style="margin:0;">
+            <label>Partida</label>
+            <input class="add-input" id="sm-origin" style="width:100%;" />
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label>Destino</label>
+            <input class="add-input" id="sm-destination" style="width:100%;" />
+          </div>
+        </div>
+      </div>
+
+      <div id="sm-tour-route-section" style="display:none;margin-bottom:12px;">
+        <div class="form-group" style="margin-top:0;">
+          <label>Local de pickup</label>
+          <input class="add-input" id="sm-tour-pickup" style="width:100%;" />
+        </div>
+        <div class="form-group">
+          <label>Destino</label>
+          <input class="add-input" id="sm-tour-destination" style="width:100%;" />
+        </div>
+        <div class="form-group">
           <label>Local de drop off</label>
           <input class="add-input" id="sm-dropoff" style="width:100%;" />
         </div>
-        <div class="form-group" id="sm-origin-wrap" style="margin:0;display:none;">
-          <label id="sm-origin-label">Partida</label>
-          <input class="add-input" id="sm-origin" style="width:100%;" />
-        </div>
-        <div class="form-group" id="sm-destination-wrap" style="margin:0;display:none;">
-          <label>Destino</label>
-          <input class="add-input" id="sm-destination" style="width:100%;" />
-        </div>
+      </div>
+
+      <div class="form-row" style="grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
         <div class="form-group" style="margin:0;">
           <label>Data</label>
           <input class="add-input" type="date" id="sm-date" style="width:100%;" />
@@ -725,6 +738,10 @@
         <div class="form-group" style="margin:0;">
           <label id="sm-time-label">Hora</label>
           <input class="add-input" type="time" id="sm-time" style="width:100%;" />
+        </div>
+        <div class="form-group" id="sm-tour-arrival-wrap" style="margin:0;display:none;">
+          <label>Hora de fim</label>
+          <input class="add-input" type="time" id="sm-tour-arrival" style="width:100%;" />
         </div>
       </div>
 
@@ -1332,25 +1349,18 @@ let editingServiceId = null;
 
 function toggleSmCustomRoute() {
   const isCustom = document.getElementById('sm-dir').value === 'custom';
-  document.getElementById('sm-origin-wrap').style.display = isCustom ? 'block' : 'none';
-  document.getElementById('sm-destination-wrap').style.display = isCustom ? 'block' : 'none';
+  document.getElementById('sm-custom-route-fields').style.display = isCustom ? 'grid' : 'none';
 }
 
 function toggleSmServiceType() {
   const isTour = document.getElementById('sm-service-type').value === 'tour';
   document.getElementById('sm-tour-arrival-wrap').style.display = isTour ? 'block' : 'none';
-  document.getElementById('sm-dir-wrap').style.display = isTour ? 'none' : 'block';
+  document.getElementById('sm-transfer-route-section').style.display = isTour ? 'none' : 'block';
+  document.getElementById('sm-tour-route-section').style.display = isTour ? 'block' : 'none';
   document.getElementById('sm-flight-wrap').style.display = isTour ? 'none' : 'block';
   document.getElementById('sm-arrival-wrap').style.display = isTour ? 'none' : 'block';
-  document.getElementById('sm-dropoff-wrap').style.display = isTour ? 'block' : 'none';
   document.getElementById('sm-time-label').textContent = isTour ? 'Hora de início' : 'Hora';
-  document.getElementById('sm-origin-label').textContent = isTour ? 'Local de pickup' : 'Partida';
-  if (isTour) {
-    document.getElementById('sm-origin-wrap').style.display = 'block';
-    document.getElementById('sm-destination-wrap').style.display = 'block';
-  } else {
-    toggleSmCustomRoute();
-  }
+  if (!isTour) toggleSmCustomRoute();
 }
 
 function toggleSmChildAges() {
@@ -1370,6 +1380,8 @@ function openServiceModal(id) {
   document.getElementById('sm-dir').value = t.dir || 'h2a';
   document.getElementById('sm-origin').value = t.origin || '';
   document.getElementById('sm-destination').value = t.destination || '';
+  document.getElementById('sm-tour-pickup').value = t.origin || '';
+  document.getElementById('sm-tour-destination').value = t.destination || '';
   toggleSmCustomRoute();
   document.getElementById('sm-date').value = t.date ? t.date.split('T')[0] : '';
   document.getElementById('sm-time').value = t.time || '';
@@ -1419,8 +1431,8 @@ async function saveServiceModal() {
     name: document.getElementById('sm-name').value.trim(),
     phone: document.getElementById('sm-phone').value.trim(),
     dir: dirVal,
-    origin: serviceTypeVal === 'tour' || dirVal === 'custom' ? document.getElementById('sm-origin').value.trim() : '',
-    destination: serviceTypeVal === 'tour' || dirVal === 'custom' ? document.getElementById('sm-destination').value.trim() : '',
+    origin: serviceTypeVal === 'tour' ? document.getElementById('sm-tour-pickup').value.trim() : (dirVal === 'custom' ? document.getElementById('sm-origin').value.trim() : ''),
+    destination: serviceTypeVal === 'tour' ? document.getElementById('sm-tour-destination').value.trim() : (dirVal === 'custom' ? document.getElementById('sm-destination').value.trim() : ''),
     dropoff: serviceTypeVal === 'tour' ? document.getElementById('sm-dropoff').value.trim() : '',
     date: document.getElementById('sm-date').value,
     time: document.getElementById('sm-time').value,
