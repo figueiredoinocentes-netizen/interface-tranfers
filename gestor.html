@@ -156,6 +156,47 @@
   .btn-save:hover { background: var(--gold-light); }
   .btn-save:disabled { background: var(--muted2); cursor: default; }
 
+  /* NEW SERVICE FORM — mirrors the partner booking page aesthetic */
+  .svc-form .section-label { font-size: 10px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted2); margin: 20px 0 10px; }
+  .svc-form .section-label:first-child { margin-top: 0; }
+  .svc-form label { display: block; font-size: 11px; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 5px; text-transform: uppercase; }
+  .svc-form label .req { color: var(--gold); margin-left: 2px; }
+  .svc-form .form-group { margin-top: 12px; }
+  .svc-form .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+  .svc-form input, .svc-form select, .svc-form textarea {
+    width: 100%; background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 9px 13px; font-size: 14px;
+    font-family: var(--font); color: var(--text); outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s; appearance: none;
+  }
+  .svc-form input:focus, .svc-form select:focus, .svc-form textarea:focus {
+    border-color: var(--gold); box-shadow: 0 0 0 3px rgba(184,145,58,0.12);
+  }
+  .svc-form textarea { resize: vertical; min-height: 68px; line-height: 1.5; }
+  .svc-form .dir-toggle { display: grid; gap: 8px; }
+  .svc-form .dir-btn {
+    padding: 12px 10px; border: 1px solid var(--border); border-radius: var(--radius);
+    background: var(--surface); color: var(--muted); font-size: 12px; cursor: pointer;
+    font-family: var(--font); text-align: center; transition: border-color 0.15s, color 0.15s, background 0.15s; line-height: 1.4;
+  }
+  .svc-form .dir-btn .dir-icon { font-size: 20px; display: block; margin-bottom: 4px; }
+  .svc-form .dir-btn:hover { border-color: var(--gold-light); color: var(--text); }
+  .svc-form .dir-btn.selected { border: 1.5px solid var(--gold); color: var(--gold); background: var(--gold-dim); font-weight: 500; }
+  .svc-form .route-pill {
+    background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 9px 14px; font-size: 13px; color: var(--muted); margin-top: 8px; display: flex; align-items: center; gap: 7px;
+  }
+  .svc-form .route-pill strong { color: var(--text); }
+  .svc-form .checkbox-row {
+    display: flex; align-items: center; gap: 10px; margin-top: 12px; padding: 11px 13px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    cursor: pointer; transition: border-color 0.15s;
+  }
+  .svc-form .checkbox-row:hover { border-color: var(--gold-light); }
+  .svc-form .checkbox-row input[type=checkbox] { width: 16px; height: 16px; cursor: pointer; accent-color: var(--gold); }
+  .svc-form .checkbox-row label { font-size: 14px; color: var(--text); margin: 0; cursor: pointer; text-transform: none; }
+  .svc-form .child-age-input { width: 80px; }
+
   /* TEAM SECTION — cards grid */
   .team-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 4px; }
 
@@ -255,12 +296,15 @@
 
 <!-- SERVIÇOS -->
 <div id="page-servicos" class="page active">
-  <div class="page-header">
-    <div class="page-header-icon">🗓️</div>
-    <div>
-      <div class="page-header-title">Serviços</div>
-      <div class="page-header-sub">Todos os pedidos de transfer</div>
+  <div class="page-header" style="justify-content:space-between;">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div class="page-header-icon">🗓️</div>
+      <div>
+        <div class="page-header-title">Serviços</div>
+        <div class="page-header-sub">Todos os pedidos de transfer</div>
+      </div>
     </div>
+    <button class="btn-add" onclick="openNewServiceModal()">+ Novo Serviço</button>
   </div>
   <div class="container">
     <div class="filters" id="filters" style="justify-content:space-between;">
@@ -433,6 +477,149 @@
       </table>
     </div>
 
+  </div>
+</div>
+
+<!-- NEW SERVICE MODAL -->
+<div id="new-service-modal" onclick="if(event.target===this)closeNewServiceModal()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:100;align-items:center;justify-content:center;">
+  <div style="background:var(--bg);border-radius:var(--radius-lg);width:560px;max-width:92vw;max-height:90vh;overflow-y:auto;padding:24px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+      <div style="font-size:16px;font-weight:600;">Novo Serviço</div>
+      <button onclick="closeNewServiceModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted);line-height:1;">×</button>
+    </div>
+
+    <div class="svc-form">
+
+      <div class="section-label">Parceiro</div>
+      <div class="form-group" style="margin-top:0;">
+        <label>Parceiro <span class="req">*</span></label>
+        <select id="ns-partner" onchange="onNsPartnerChange()"></select>
+      </div>
+
+      <div class="section-label">Direção do transfer</div>
+      <div class="dir-toggle" style="grid-template-columns:1fr 1fr 1fr;">
+        <button type="button" class="dir-btn selected" id="ns-btn-h2a" onclick="setNsDir('h2a')">
+          <span class="dir-icon">🏨 → ✈️</span>
+          <span class="dir-label">Hotel → Aeroporto</span>
+        </button>
+        <button type="button" class="dir-btn" id="ns-btn-a2h" onclick="setNsDir('a2h')">
+          <span class="dir-icon">✈️ → 🏨</span>
+          <span class="dir-label">Aeroporto → Hotel</span>
+        </button>
+        <button type="button" class="dir-btn" id="ns-btn-custom" onclick="setNsDir('custom')">
+          <span class="dir-icon">📍 → 📍</span>
+          <span class="dir-label">Personalizado</span>
+        </button>
+      </div>
+      <div class="route-pill" id="ns-route-pill-fixed">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--gold);flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span id="ns-route-text"><strong id="ns-route-partner-name">—</strong> → Aeroporto de Lisboa</span>
+      </div>
+      <div class="form-row" id="ns-route-custom-fields" style="display:none;">
+        <div class="form-group" style="margin:0;">
+          <label>Partida <span class="req">*</span></label>
+          <input type="text" id="ns-origin" placeholder="ex. Sintra" />
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label>Destino <span class="req">*</span></label>
+          <input type="text" id="ns-destination" placeholder="ex. Cascais" />
+        </div>
+      </div>
+
+      <div class="section-label">Cliente</div>
+      <div class="form-group" style="margin-top:0;">
+        <label>Nome completo <span class="req">*</span></label>
+        <input type="text" id="ns-name" placeholder="ex. João Silva" />
+      </div>
+      <div class="form-group">
+        <label id="ns-phone-label">Telemóvel do cliente</label>
+        <input type="tel" id="ns-phone" placeholder="ex. +351 912 345 678" />
+      </div>
+      <div class="form-row">
+        <div class="form-group" style="margin:0;">
+          <label>Nº de adultos <span class="req">*</span></label>
+          <input type="number" id="ns-adults" min="0" max="8" placeholder="1" oninput="autoNsCarType()" />
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label>Nº de crianças</label>
+          <input type="number" id="ns-children" min="0" max="8" placeholder="0" oninput="autoNsCarType(); toggleNsChildAges();" />
+        </div>
+      </div>
+      <div class="form-row" style="margin-top:10px;">
+        <div class="form-group" style="margin:0;">
+          <label>Bagagens</label>
+          <input type="number" id="ns-luggage" min="0" placeholder="0" />
+        </div>
+        <div></div>
+      </div>
+      <div class="checkbox-row" onclick="document.getElementById('ns-child-seat').click()">
+        <input type="checkbox" id="ns-child-seat" onclick="event.stopPropagation()" oninput="toggleNsChildAges()" />
+        <label for="ns-child-seat">Precisa de cadeirinha de criança</label>
+      </div>
+      <div id="ns-child-ages-wrap" style="display:none;margin-top:10px;">
+        <div class="section-label" style="margin-top:0;">Idade da(s) criança(s) <span class="req">*</span></div>
+        <div id="ns-child-ages-inputs" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
+      </div>
+
+      <div class="section-label">Tipo de veículo</div>
+      <div class="dir-toggle" style="grid-template-columns:1fr 1fr;">
+        <button type="button" class="dir-btn selected" id="ns-btn-sedan" onclick="setNsCarType('sedan')">
+          <span class="dir-icon">🚗</span>
+          <span class="dir-label">Sedan</span>
+        </button>
+        <button type="button" class="dir-btn" id="ns-btn-van" onclick="setNsCarType('van')">
+          <span class="dir-icon">🚐</span>
+          <span class="dir-label">Van</span>
+        </button>
+      </div>
+
+      <div class="section-label">Pagamento</div>
+      <div class="dir-toggle" style="grid-template-columns:1fr 1fr;">
+        <button type="button" class="dir-btn selected" id="ns-btn-pay-driver" onclick="setNsPayment('driver')">
+          <span class="dir-icon">🙋</span>
+          <span class="dir-label">Pagamento ao motorista</span>
+        </button>
+        <button type="button" class="dir-btn" id="ns-btn-pay-hotel" onclick="setNsPayment('hotel')">
+          <span class="dir-icon">🏨</span>
+          <span class="dir-label">Pagamento ao hotel</span>
+        </button>
+      </div>
+
+      <div class="section-label">Voo (opcional)</div>
+      <div class="form-row" style="margin-top:0;">
+        <div class="form-group" style="margin:0;">
+          <label id="ns-flight-label">Nº de voo</label>
+          <input type="text" id="ns-flight" placeholder="ex. TP1234" />
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label>Hora de chegada estimada</label>
+          <input type="time" id="ns-arrival" />
+        </div>
+      </div>
+
+      <div class="section-label">Horário</div>
+      <div class="form-row" style="margin-top:0;">
+        <div class="form-group" style="margin:0;">
+          <label>Data <span class="req">*</span></label>
+          <input type="date" id="ns-date" />
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label>Hora de recolha <span class="req">*</span></label>
+          <input type="time" id="ns-time" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Notas</label>
+        <textarea id="ns-notes" placeholder="Informação adicional…"></textarea>
+      </div>
+
+    </div>
+
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:22px;">
+      <button onclick="closeNewServiceModal()" style="background:transparent;border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 16px;cursor:pointer;font-family:inherit;font-size:13px;">Cancelar</button>
+      <button class="btn-add" id="ns-save-btn" onclick="saveNewService()">Criar serviço</button>
+    </div>
   </div>
 </div>
 
@@ -1187,6 +1374,179 @@ async function saveServiceModal() {
   closeServiceModal();
   await loadAll();
   showToast('Serviço atualizado ✓');
+}
+
+// ── NEW SERVICE MODAL ─────────────────────────────
+let nsDir = 'h2a';
+let nsCarType = 'sedan';
+let nsPayment = 'driver';
+
+function isChildSeatVal(v) { return v === true || String(v).toUpperCase() === 'TRUE'; }
+
+function nsSelectedPartner() {
+  const id = document.getElementById('ns-partner').value;
+  return partners.find(p => String(p.id) === String(id)) || null;
+}
+
+function nsLookupPrice(dirVal, carTypeVal) {
+  const p = nsSelectedPartner();
+  if (!p) return '';
+  const pr = pricing.find(x => String(x.id) === String(p.id));
+  if (!pr) return '';
+  const key = 'price_' + dirVal + '_' + carTypeVal;
+  return pr[key] || '';
+}
+
+function onNsPartnerChange() {
+  setNsDir(nsDir); // refresh route text with the newly selected partner's name
+}
+
+function setNsDir(d) {
+  nsDir = d;
+  document.getElementById('ns-btn-h2a').classList.toggle('selected', d === 'h2a');
+  document.getElementById('ns-btn-a2h').classList.toggle('selected', d === 'a2h');
+  document.getElementById('ns-btn-custom').classList.toggle('selected', d === 'custom');
+  const p = nsSelectedPartner();
+  const pname = p ? p.name : '—';
+  document.getElementById('ns-route-text').innerHTML = d === 'h2a'
+    ? '<strong>' + pname + '</strong> → Aeroporto de Lisboa'
+    : 'Aeroporto de Lisboa → <strong>' + pname + '</strong>';
+  document.getElementById('ns-route-pill-fixed').style.display = d === 'custom' ? 'none' : 'flex';
+  document.getElementById('ns-route-custom-fields').style.display = d === 'custom' ? 'grid' : 'none';
+  document.getElementById('ns-flight-label').innerHTML = 'Nº de voo' + (d === 'a2h' ? ' <span style="color:var(--gold)">*</span>' : '');
+  document.getElementById('ns-phone-label').innerHTML = 'Telemóvel do cliente' + (d === 'a2h' ? ' <span style="color:var(--gold)">*</span>' : '');
+}
+
+function setNsCarType(c) {
+  nsCarType = c;
+  document.getElementById('ns-btn-sedan').classList.toggle('selected', c === 'sedan');
+  document.getElementById('ns-btn-van').classList.toggle('selected', c === 'van');
+}
+
+function setNsPayment(p) {
+  nsPayment = p;
+  document.getElementById('ns-btn-pay-driver').classList.toggle('selected', p === 'driver');
+  document.getElementById('ns-btn-pay-hotel').classList.toggle('selected', p === 'hotel');
+}
+
+function autoNsCarType() {
+  const adults = parseInt(document.getElementById('ns-adults').value) || 0;
+  const children = parseInt(document.getElementById('ns-children').value) || 0;
+  setNsCarType(adults + children > 2 ? 'van' : 'sedan');
+}
+
+function toggleNsChildAges() {
+  const checked = document.getElementById('ns-child-seat').checked;
+  const wrap = document.getElementById('ns-child-ages-wrap');
+  const inputsEl = document.getElementById('ns-child-ages-inputs');
+  wrap.style.display = checked ? 'block' : 'none';
+  if (!checked) { inputsEl.innerHTML = ''; return; }
+
+  const count = Math.max(1, parseInt(document.getElementById('ns-children').value) || 0);
+  const existing = Array.from(inputsEl.querySelectorAll('input')).map(i => i.value);
+  inputsEl.innerHTML = '';
+  for (let i = 0; i < count; i++) {
+    const input = document.createElement('input');
+    input.type = 'number';
+    input.min = '0';
+    input.max = '17';
+    input.placeholder = 'Idade';
+    input.className = 'child-age-input';
+    input.value = existing[i] || '';
+    inputsEl.appendChild(input);
+  }
+}
+
+function openNewServiceModal() {
+  const sel = document.getElementById('ns-partner');
+  sel.innerHTML = partners.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+
+  document.getElementById('ns-name').value = '';
+  document.getElementById('ns-phone').value = '';
+  document.getElementById('ns-origin').value = '';
+  document.getElementById('ns-destination').value = '';
+  document.getElementById('ns-adults').value = '';
+  document.getElementById('ns-children').value = '';
+  document.getElementById('ns-luggage').value = '';
+  document.getElementById('ns-child-seat').checked = false;
+  document.getElementById('ns-flight').value = '';
+  document.getElementById('ns-arrival').value = '';
+  document.getElementById('ns-date').value = '';
+  document.getElementById('ns-time').value = '';
+  document.getElementById('ns-notes').value = '';
+
+  onNsPartnerChange();
+  setNsDir('h2a');
+  setNsCarType('sedan');
+  setNsPayment('driver');
+  toggleNsChildAges();
+
+  document.getElementById('new-service-modal').style.display = 'flex';
+}
+
+function closeNewServiceModal() {
+  document.getElementById('new-service-modal').style.display = 'none';
+}
+
+async function saveNewService() {
+  const p = nsSelectedPartner();
+  const name = document.getElementById('ns-name').value.trim();
+  const phone = document.getElementById('ns-phone').value.trim();
+  const adults = document.getElementById('ns-adults').value;
+  const date = document.getElementById('ns-date').value;
+  const time = document.getElementById('ns-time').value;
+  const flight = document.getElementById('ns-flight').value.trim();
+  const origin = document.getElementById('ns-origin').value.trim();
+  const destination = document.getElementById('ns-destination').value.trim();
+
+  if (!p) { showToast('Escolhe o parceiro'); return; }
+  if (!name || !adults || !date || !time) { showToast('Preenche todos os campos obrigatórios (*)'); return; }
+  if (nsDir === 'a2h' && !flight) { showToast('Nº de voo é obrigatório para Aeroporto → Hotel'); return; }
+  if (nsDir === 'a2h' && !phone) { showToast('Telemóvel é obrigatório para Aeroporto → Hotel'); return; }
+  if (nsDir === 'custom' && (!origin || !destination)) { showToast('Indica a partida e o destino'); return; }
+
+  const childSeat = document.getElementById('ns-child-seat').checked;
+  let childAges = [];
+  if (childSeat) {
+    childAges = Array.from(document.querySelectorAll('#ns-child-ages-inputs .child-age-input')).map(i => i.value.trim());
+    if (childAges.some(a => a === '')) { showToast('Indica a idade de todas as crianças'); return; }
+  }
+
+  const btn = document.getElementById('ns-save-btn');
+  if (btn.disabled) return;
+  btn.disabled = true;
+  btn.textContent = 'A criar…';
+
+  const payload = {
+    id: String(Date.now()), hotel: p.name, partner_id: p.id,
+    dir: nsDir,
+    origin: nsDir === 'custom' ? origin : '',
+    destination: nsDir === 'custom' ? destination : '',
+    name, phone,
+    adults: parseInt(adults) || 0,
+    children: parseInt(document.getElementById('ns-children').value) || 0,
+    luggage: parseInt(document.getElementById('ns-luggage').value) || 0,
+    child_seat: childSeat,
+    child_ages: childAges.join(','),
+    payment: nsPayment,
+    car_type: nsCarType,
+    date, time,
+    flight, arrival: document.getElementById('ns-arrival').value,
+    notes: document.getElementById('ns-notes').value.trim(),
+    status: 'pendente', driver: '',
+    price: nsLookupPrice(nsDir, nsCarType),
+  };
+
+  const res = await fetch(`${API}?type=transfers`, { method: 'POST', body: JSON.stringify(payload) });
+
+  btn.disabled = false;
+  btn.textContent = 'Criar serviço';
+
+  if (!res.ok) { showToast('Erro ao criar serviço'); return; }
+
+  closeNewServiceModal();
+  await loadAll();
+  showToast('Serviço criado ✓');
 }
 
 // ── RENDER DRIVERS ────────────────────────────────
