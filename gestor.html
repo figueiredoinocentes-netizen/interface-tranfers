@@ -630,13 +630,9 @@
         </div>
       </div>
 
-      <div class="form-group" id="ns-tour-arrival-wrap" style="display:none;">
-        <label id="ns-tour-arrival-label">Hora de fim</label>
-        <input type="time" id="ns-tour-arrival" />
-      </div>
 
       <div class="section-label">Horário</div>
-      <div class="form-row" style="margin-top:0;">
+      <div class="form-row" id="ns-datetime-row" style="margin-top:0;">
         <div class="form-group" style="margin:0;">
           <label>Data <span class="req">*</span></label>
           <input type="date" id="ns-date" />
@@ -644,6 +640,10 @@
         <div class="form-group" style="margin:0;">
           <label id="ns-time-label">Hora de recolha <span class="req">*</span></label>
           <input type="time" id="ns-time" />
+        </div>
+        <div class="form-group" id="ns-tour-arrival-wrap" style="margin:0;display:none;">
+          <label id="ns-tour-arrival-label">Hora de fim</label>
+          <input type="time" id="ns-tour-arrival" />
         </div>
       </div>
 
@@ -1483,6 +1483,7 @@ function setNsServiceType(t) {
   document.getElementById('ns-tour-arrival-wrap').style.display = t === 'tour' ? 'block' : 'none';
   document.getElementById('ns-tour-arrival-label').innerHTML = 'Hora de fim' + (t === 'tour' ? ' <span style="color:var(--gold)">*</span>' : '');
   document.getElementById('ns-time-label').innerHTML = (t === 'tour' ? 'Hora de início' : 'Hora de recolha') + ' <span class="req">*</span>';
+  document.getElementById('ns-datetime-row').style.gridTemplateColumns = t === 'tour' ? '1fr 1fr 1fr' : '1fr 1fr';
 }
 
 function isChildSeatVal(v) { return v === true || String(v).toUpperCase() === 'TRUE'; }
