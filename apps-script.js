@@ -1,7 +1,12 @@
+// ============================================================
+// VIANTA TRANSFERS — Google Apps Script
+// Cola este código em script.google.com e faz deploy como Web App
+// ============================================================
+
 const SHEET_NAME = 'Transfers';
 
 function getSheet() {
-  const ss = SpreadsheetApp.openById('1fwGueaZ3otmqO1IODXDv7qe3NayQson1ICgnQHBJc0E');
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
   let sheet = ss.getSheetByName(SHEET_NAME);
   if (!sheet) {
     sheet = ss.insertSheet(SHEET_NAME);
@@ -41,25 +46,26 @@ function doGet(e) {
 function doPost(e) {
   const sheet = getSheet();
   const data = JSON.parse(e.postData.contents);
-  const action = data._action || e.parameter.action;
+  const action = e.parameter.action;
 
   if (action === 'update') {
+    // Atualiza motorista ou status numa linha existente
     const rows = sheet.getDataRange().getValues();
     const headers = rows[0];
     const idCol = headers.indexOf('id');
-    const editableFields = ['hotel','dir','name','adults','children','luggage','childSeat','payment','date','time','flight','arrival','notes','status','driver'];
     for (let i = 1; i < rows.length; i++) {
       if (String(rows[i][idCol]) === String(data.id)) {
-        editableFields.forEach(field => {
-          if (data[field] !== undefined) {
-            const col = headers.indexOf(field);
-            if (col !== -1) sheet.getRange(i + 1, col + 1).setValue(data[field]);
-          }
-        });
+        if (data.driver !== undefined) {
+          sheet.getRange(i + 1, headers.indexOf('driver') + 1).setValue(data.driver);
+        }
+        if (data.status !== undefined) {
+          sheet.getRange(i + 1, headers.indexOf('status') + 1).setValue(data.status);
+        }
         break;
       }
     }
   } else {
+    // Novo transfer — adiciona linha
     sheet.appendRow([
       data.id, data.hotel, data.dir, data.name,
       data.adults, data.children, data.luggage,

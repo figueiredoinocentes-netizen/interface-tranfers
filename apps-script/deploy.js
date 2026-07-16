@@ -29,14 +29,18 @@ async function getAccessToken() {
   return data.access_token;
 }
 
-async function getLatestVersion(token) {
+async function createVersion(token) {
   const res = await fetch(
     `https://script.googleapis.com/v1/projects/${SCRIPT_ID}/versions`,
-    { headers: { Authorization: `Bearer ${token}` } }
+    {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ description: 'auto-deploy' })
+    }
   );
   const data = await res.json();
-  const versions = data.versions || [];
-  return Math.max(...versions.map(v => v.versionNumber));
+  if (!data.versionNumber) throw new Error('Falha a criar versão: ' + JSON.stringify(data));
+  return data.versionNumber;
 }
 
 async function updateDeployment(token, versionNumber) {
@@ -65,9 +69,9 @@ async function main() {
   console.log('🔑 A obter token de acesso...');
   const token = await getAccessToken();
 
-  console.log('🔢 A verificar última versão...');
-  const version = await getLatestVersion(token);
-  console.log(`   Versão mais recente: ${version}`);
+  console.log('🔢 A criar nova versão...');
+  const version = await createVersion(token);
+  console.log(`   Nova versão criada: ${version}`);
 
   console.log(`🚀 A atualizar deployment para versão ${version}...`);
   const result = await updateDeployment(token, version);
