@@ -7,7 +7,7 @@ function configureWebPush() {
   const publicKey = process.env.VAPID_PUBLIC_KEY;
   const privateKey = process.env.VAPID_PRIVATE_KEY;
   if (!publicKey || !privateKey) return false;
-  webpush.setVapidDetails('mailto:figueiredo.inocentes@gmail.com', publicKey, privateKey);
+  webpush.setVapidDetails(`mailto:${process.env.MANAGER_EMAIL}`, publicKey, privateKey);
   return true;
 }
 
