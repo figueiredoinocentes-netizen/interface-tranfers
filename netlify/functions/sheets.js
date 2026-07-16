@@ -1,6 +1,36 @@
 const { google } = require('googleapis');
+const webpush = require('web-push');
 
 const SHEET_ID = '1fwGueaZ3otmqO1IODXDv7qe3NayQson1ICgnQHBJc0E';
+
+function configureWebPush() {
+  const publicKey = process.env.VAPID_PUBLIC_KEY;
+  const privateKey = process.env.VAPID_PRIVATE_KEY;
+  if (!publicKey || !privateKey) return false;
+  webpush.setVapidDetails('mailto:figueiredo.inocentes@gmail.com', publicKey, privateKey);
+  return true;
+}
+
+async function sendPushNotifications(sheets, data) {
+  if (!configureWebPush()) return;
+
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: 'Subscricoes!A2:D' }).catch(() => null);
+  const rows = res && res.data.values ? res.data.values : [];
+  if (!rows.length) return;
+
+  const title = `Novo ${data.service_type === 'tour' ? 'tour' : 'transfer'} — ${data.hotel || ''}`;
+  const body = `${data.name || 'Cliente'} — ${data.date || ''} ${data.time || ''}`;
+  const payload = JSON.stringify({ title, body, url: '/gestor.html' });
+
+  await Promise.all(rows.map(async ([id, endpoint, p256dh, auth]) => {
+    if (!endpoint) return;
+    try {
+      await webpush.sendNotification({ endpoint, keys: { p256dh, auth } }, payload);
+    } catch (e) {
+      console.error('Push failed for subscription', id, e.message);
+    }
+  }));
+}
 
 async function sendTransferEmail(data, id) {
   const apiKey = process.env.RESEND_API_KEY;
@@ -49,6 +79,7 @@ const SHEETS = {
   partners:  { name: 'Parceiros',  headers: ['id','slug','name'] },
   // one row per partner; 'id' holds the partner's id (1:1 relationship)
   pricing:   { name: 'Precos', headers: ['id','price_h2a_sedan','price_h2a_van','price_a2h_sedan','price_a2h_van','commission_percent'] },
+  subscriptions: { name: 'Subscricoes', headers: ['id','endpoint','p256dh','auth'] },
 };
 
 function getAuth() {
@@ -130,6 +161,11 @@ exports.handler = async (event) => {
     // POST — create
     if (event.httpMethod === 'POST') {
       const existingRows = await getRows(sheets, type);
+
+      if (type === 'subscriptions' && existingRows.some(r => r.endpoint === body.endpoint)) {
+        return ok({ ok: true, alreadySubscribed: true });
+      }
+
       let newId;
       if (type === 'transfers') {
         newId = body.id || String(Date.now());
@@ -154,6 +190,8 @@ exports.handler = async (event) => {
         newRow = [newId, body.slug || '', body.name || ''];
       } else if (type === 'pricing') {
         newRow = [newId, body.price_h2a_sedan || '', body.price_h2a_van || '', body.price_a2h_sedan || '', body.price_a2h_van || '', body.commission_percent || ''];
+      } else if (type === 'subscriptions') {
+        newRow = [newId, body.endpoint || '', body.p256dh || '', body.auth || ''];
       }
 
       await sheets.spreadsheets.values.append({
@@ -165,6 +203,7 @@ exports.handler = async (event) => {
 
       if (type === 'transfers') {
         await sendTransferEmail(body, newId).catch(e => console.error('Email error:', e));
+        await sendPushNotifications(sheets, body).catch(e => console.error('Push error:', e));
       }
 
       return ok({ ok: true, id: newId });

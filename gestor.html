@@ -4,6 +4,8 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <link rel="icon" type="image/png" href="favicon.png" />
+<link rel="manifest" href="/manifest.json" />
+<meta name="theme-color" content="#0D0D0B" />
 <title>Vianta — Gestão de Frota</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=DM+Sans:wght@300;400;500&family=DM+Mono&display=swap" rel="stylesheet" />
@@ -281,7 +283,10 @@
     <div class="logo-divider"></div>
     <span class="logo-text">Transfers</span>
   </div>
-  <span class="topbar-badge">Gestão de Frota</span>
+  <div style="display:flex;align-items:center;gap:12px;">
+    <button id="push-btn" onclick="enablePushNotifications()" style="display:none;font-family:inherit;font-size:11px;letter-spacing:0.06em;text-transform:uppercase;background:var(--topbar-gold);color:#0D0D0B;border:none;border-radius:20px;padding:6px 14px;cursor:pointer;font-weight:500;">🔔 Ativar notificações</button>
+    <span class="topbar-badge">Gestão de Frota</span>
+  </div>
 </div>
 
 <!-- TAB SWITCHER -->
@@ -1027,6 +1032,55 @@ function showToast(msg) {
 }
 
 const API = '/.netlify/functions/sheets';
+
+// ── PUSH NOTIFICATIONS ────────────────────────────
+const VAPID_PUBLIC_KEY = 'BA1QAWY6u9WupD8vxsc60G2RzDdF_-duTGLy3dfNYSYrsqBLFWgBubtUtDbZBkfZ4lcGz8X2eEFlN-7glJhsG2E';
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = atob(base64);
+  return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
+}
+
+async function initPush() {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+  try {
+    const reg = await navigator.serviceWorker.register('/sw.js');
+    const existing = await reg.pushManager.getSubscription();
+    if (!existing && Notification.permission !== 'denied') {
+      document.getElementById('push-btn').style.display = 'inline-block';
+    }
+  } catch (e) { console.error('SW registration failed:', e); }
+}
+
+async function enablePushNotifications() {
+  const btn = document.getElementById('push-btn');
+  try {
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') { showToast('Permissão de notificações não concedida'); return; }
+
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+    });
+
+    const json = sub.toJSON();
+    await fetch(`${API}?type=subscriptions`, {
+      method: 'POST',
+      body: JSON.stringify({ endpoint: json.endpoint, p256dh: json.keys.p256dh, auth: json.keys.auth }),
+    });
+
+    btn.style.display = 'none';
+    showToast('Notificações ativadas ✓');
+  } catch (e) {
+    console.error(e);
+    showToast('Erro ao ativar notificações');
+  }
+}
+
+initPush();
 
 // ── LOAD ─────────────────────────────────────────
 async function loadAll() {
