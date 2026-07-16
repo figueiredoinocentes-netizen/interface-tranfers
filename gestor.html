@@ -272,6 +272,34 @@
   .dir-h2a { background: var(--info-bg); color: var(--info-text); }
   .dir-a2h { background: var(--gold-dim); color: var(--gold); }
   .dir-tour { background: var(--success-bg); color: var(--success-text); }
+
+  /* MOBILE */
+  @media (max-width: 640px) {
+    .tab-switcher { padding: 16px 12px 0; }
+    .tab-group { flex-wrap: wrap; justify-content: center; }
+    .tab { padding: 8px 14px; font-size: 12px; }
+
+    .container { padding: 16px 14px 60px; }
+    .page-header { padding: 20px 14px 0; flex-wrap: wrap; gap: 10px; }
+
+    .filters { flex-direction: column; align-items: stretch; }
+    .filters > div { justify-content: center; }
+    #servicos-partner-filter { width: 100%; }
+
+    .table-wrap { overflow-x: auto; }
+    .transfers-table { min-width: 640px; }
+
+    .team-grid { grid-template-columns: 1fr; }
+
+    .dash-kpi-grid { grid-template-columns: 1fr !important; }
+    #dash-scope { width: 100%; min-width: 0 !important; }
+    #dash-period-label { min-width: 0 !important; }
+
+    .dir-toggle, .form-row, .form-grid-2 { grid-template-columns: 1fr !important; }
+
+    /* modal padding tightened on small screens */
+    #service-modal > div, #new-service-modal > div, #partner-modal > div { padding: 18px !important; }
+  }
 </style>
 </head>
 <body>
@@ -457,7 +485,7 @@
       </select>
     </div>
 
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px;">
+    <div class="dash-kpi-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px;">
       <div class="team-card" style="padding:18px 20px;">
         <div style="font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Valor faturado</div>
         <div style="font-size:26px;font-weight:600;" id="dash-total-revenue">€0.00</div>
@@ -679,7 +707,7 @@
 
     <div style="margin-bottom:20px;padding-bottom:18px;border-bottom:1px solid var(--border);">
       <div style="font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">Cliente</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+      <div class="form-grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
         <div class="form-group" style="margin:0;">
           <label>Nome</label>
           <input class="add-input" id="sm-name" style="width:100%;" />
@@ -751,7 +779,7 @@
       </div>
 
       <div style="font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">Passageiros e bagagem</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+      <div class="form-grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
         <div class="form-group" style="margin:0;">
           <label>Adultos</label>
           <input class="add-input" type="number" min="0" id="sm-adults" style="width:100%;" />
@@ -782,7 +810,7 @@
       </div>
 
       <div style="font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">Voo e pagamento</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+      <div class="form-grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
         <div class="form-group" id="sm-flight-wrap" style="margin:0;">
           <label>Nº de voo</label>
           <input class="add-input" id="sm-flight" style="width:100%;" />
@@ -807,7 +835,7 @@
     </div>
 
     <div style="font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">Gestão do serviço</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+    <div class="form-grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
       <div class="form-group" style="margin:0;">
         <label>Motorista</label>
         <select class="add-input" id="sm-driver" style="width:100%;">
@@ -856,7 +884,7 @@
     </div>
 
     <div style="font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin:20px 0 10px;">Preços dos serviços (€)</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+    <div class="form-grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
       <div class="form-group" style="margin:0;">
         <label>Hotel → Aeroporto (Sedan)</label>
         <input class="add-input" type="number" min="0" step="0.01" id="pm-price-h2a-sedan" style="width:100%;" placeholder="0.00" />
