@@ -1,6 +1,11 @@
 [build]
   functions = "netlify/functions"
 
+[build.environment]
+  # VAPID_PUBLIC_KEY is intentionally public (embedded client-side for Web Push) —
+  # exclude it from Netlify's secret-exposure scan to avoid false-positive build failures.
+  SECRETS_SCAN_OMIT_KEYS = "VAPID_PUBLIC_KEY"
+
 [functions]
   node_bundler = "esbuild"
   external_node_modules = ["web-push"]
