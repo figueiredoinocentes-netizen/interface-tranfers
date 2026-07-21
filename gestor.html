@@ -1453,7 +1453,7 @@ function renderTransfers() {
 
   tbody.innerHTML = list.map(t => {
     const border = statusColor(t.status);
-    return `<tr class="service-row" style="cursor:pointer;border-left:3px solid ${border};" onclick="openServiceModal('${t.id}')">
+    return `<tr class="service-row" style="cursor:pointer;border-left:3px solid ${border};" onclick="openViewServiceModal('${t.id}')">
       <td>
         <div class="cell-name">${t.name || '—'}</div>
         <div class="cell-hotel">${partnerName(t)}</div>
