@@ -1501,6 +1501,7 @@ function buildDriverMsg(t) {
   L.push(`*Veículo:* ${t.car_type === 'van' ? 'Van' : 'Sedan'}`);
   if (isChildSeatVal(t.child_seat)) L.push(`*Cadeirinha:* sim${t.child_ages ? ' (idade(s): ' + t.child_ages + ')' : ''}`);
   L.push(`*Pagamento:* ${t.payment === 'driver' ? 'ao motorista' : 'ao hotel'}`);
+  if (t.payment === 'driver' && t.price) L.push(`*Valor a cobrar:* ${parseFloat(t.price).toFixed(2)} €`);
   if (!isTour && t.flight) L.push(`*Voo:* ${t.flight}${t.arrival ? ' — chegada ' + fmtTime(t.arrival) : ''}`);
 
   if (t.notes) { L.push(''); L.push(`*Notas:* ${t.notes}`); }
