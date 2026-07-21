@@ -1473,30 +1473,41 @@ let viewingServiceId = null;
 
 function buildDriverMsg(t) {
   const p = partnerName(t);
-  let m = `${t.service_type === 'tour' ? '🗺️ *TOUR VIANTA*' : '🚗 *TRANSFER VIANTA*'}\n`;
-  m += `🏨 Parceiro: ${p}\n`;
-  m += `👤 Cliente: ${t.name || '—'}\n`;
-  if (t.phone) m += `📱 Telemóvel: ${t.phone}\n`;
-  if (t.service_type === 'tour') {
-    m += `🗺️ Percurso: ${t.origin || '—'} → ${t.destination || '—'} → ${t.dropoff || '—'}\n`;
-    m += `📅 Data: ${fmtDate(t.date)}\n`;
-    m += `🕐 Início: ${fmtTime(t.time)}${t.tour_arrival ? ' | Fim: ' + fmtTime(t.tour_arrival) : ''}\n`;
-  } else {
-    m += `🔄 ${dirLabel(t).replace(/<[^>]+>/g, '')}\n`;
-    m += `📅 Data: ${fmtDate(t.date)} às ${fmtTime(t.time)}\n`;
-  }
-  m += `👥 Adultos: ${t.adults || 0}`;
-  if (t.children) m += ` | Crianças: ${t.children}`;
-  m += '\n';
-  if (t.luggage) m += `🧳 Bagagens: ${t.luggage}\n`;
-  if (isChildSeatVal(t.child_seat)) m += `🪑 Cadeirinha necessária${t.child_ages ? ' — idade(s): ' + t.child_ages : ''}\n`;
-  m += `${t.car_type === 'van' ? '🚐 Van' : '🚗 Sedan'}\n`;
-  m += `💳 Pagamento: ${t.payment === 'driver' ? 'ao motorista' : 'ao hotel'}\n`;
-  if (t.service_type !== 'tour' && t.flight) m += `✈️ Voo: ${t.flight}${t.arrival ? ' — chegada ' + fmtTime(t.arrival) : ''}\n`;
-  if (t.notes) m += `📝 Notas: ${t.notes}\n`;
+  const isTour = t.service_type === 'tour';
   const driverName = drivers.find(d => String(d.id) === String(t.driver))?.name;
-  if (driverName) m += `🚘 Motorista: ${driverName}\n`;
-  return m;
+  const line = '───────────────';
+  const L = [];
+
+  L.push(isTour ? 'TOUR VIANTA' : 'TRANSFER VIANTA');
+  L.push(line);
+  L.push(`*Cliente:* ${t.name || '—'}`);
+  if (t.phone) L.push(`*Telemóvel:* ${t.phone}`);
+  L.push(`*Parceiro:* ${p}`);
+  L.push('');
+
+  if (isTour) {
+    L.push(`*Percurso:* ${t.origin || '—'} → ${t.destination || '—'} → ${t.dropoff || '—'}`);
+    L.push(`*Data:* ${fmtDate(t.date)}`);
+    L.push(`*Início:* ${fmtTime(t.time)}${t.tour_arrival ? '    *Fim:* ' + fmtTime(t.tour_arrival) : ''}`);
+  } else {
+    L.push(`*Percurso:* ${dirLabel(t).replace(/<[^>]+>/g, '')}`);
+    L.push(`*Data:* ${fmtDate(t.date)}    *Hora:* ${fmtTime(t.time)}`);
+  }
+  L.push('');
+
+  let pax = `*Passageiros:* ${t.adults || 0} adulto(s)`;
+  if (t.children) pax += `, ${t.children} criança(s)`;
+  L.push(pax);
+  if (t.luggage) L.push(`*Bagagem:* ${t.luggage}`);
+  L.push(`*Veículo:* ${t.car_type === 'van' ? 'Van' : 'Sedan'}`);
+  if (isChildSeatVal(t.child_seat)) L.push(`*Cadeirinha:* sim${t.child_ages ? ' (idade(s): ' + t.child_ages + ')' : ''}`);
+  L.push(`*Pagamento:* ${t.payment === 'driver' ? 'ao motorista' : 'ao hotel'}`);
+  if (!isTour && t.flight) L.push(`*Voo:* ${t.flight}${t.arrival ? ' — chegada ' + fmtTime(t.arrival) : ''}`);
+
+  if (t.notes) { L.push(''); L.push(`*Notas:* ${t.notes}`); }
+  if (driverName) { L.push(''); L.push(line); L.push(`*Motorista:* ${driverName}`); }
+
+  return L.join('\n');
 }
 
 function openViewServiceModal(id) {
