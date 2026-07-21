@@ -3,6 +3,18 @@ const webpush = require('web-push');
 
 const SHEET_ID = '1fwGueaZ3otmqO1IODXDv7qe3NayQson1ICgnQHBJc0E';
 
+// Converts a 0-based column index to its spreadsheet letter (0->A, 25->Z, 26->AA, ...)
+function colLetter(index) {
+  let letter = '';
+  let n = index + 1;
+  while (n > 0) {
+    const rem = (n - 1) % 26;
+    letter = String.fromCharCode(65 + rem) + letter;
+    n = Math.floor((n - 1) / 26);
+  }
+  return letter;
+}
+
 function configureWebPush() {
   const publicKey = process.env.VAPID_PUBLIC_KEY;
   const privateKey = process.env.VAPID_PRIVATE_KEY;
@@ -231,7 +243,7 @@ exports.handler = async (event) => {
         if (body[field] !== undefined) {
           const colIndex = cfg.headers.indexOf(field);
           if (colIndex === -1) continue;
-          const col = String.fromCharCode(65 + colIndex);
+          const col = colLetter(colIndex);
           updates.push({ range: `${cfg.name}!${col}${sheetRow}`, values: [[body[field]]] });
         }
       }
@@ -255,7 +267,7 @@ exports.handler = async (event) => {
       const sheetRow = rowIndex + 2;
       if (type === 'transfers') {
         // soft delete — keep row but mark as cancelado
-        const col = String.fromCharCode(65 + cfg.headers.indexOf('status'));
+        const col = colLetter(cfg.headers.indexOf('status'));
         await sheets.spreadsheets.values.update({
           spreadsheetId: SHEET_ID, range: `${cfg.name}!${col}${sheetRow}`,
           valueInputOption: 'RAW', requestBody: { values: [['cancelado']] },
