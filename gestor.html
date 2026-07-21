@@ -1474,7 +1474,6 @@ let viewingServiceId = null;
 function buildDriverMsg(t) {
   const p = partnerName(t);
   const isTour = t.service_type === 'tour';
-  const driverName = drivers.find(d => String(d.id) === String(t.driver))?.name;
   const line = '───────────────';
   const L = [];
 
@@ -1505,7 +1504,6 @@ function buildDriverMsg(t) {
   if (!isTour && t.flight) L.push(`*Voo:* ${t.flight}${t.arrival ? ' — chegada ' + fmtTime(t.arrival) : ''}`);
 
   if (t.notes) { L.push(''); L.push(`*Notas:* ${t.notes}`); }
-  if (driverName) { L.push(''); L.push(line); L.push(`*Motorista:* ${driverName}`); }
 
   return L.join('\n');
 }
