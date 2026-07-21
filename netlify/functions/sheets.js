@@ -226,18 +226,20 @@ exports.handler = async (event) => {
         ? ['name']
         : ['name','phone','active'];
 
+      const updates = [];
       for (const field of updatableFields) {
         if (body[field] !== undefined) {
           const colIndex = cfg.headers.indexOf(field);
           if (colIndex === -1) continue;
           const col = String.fromCharCode(65 + colIndex);
-          await sheets.spreadsheets.values.update({
-            spreadsheetId: SHEET_ID,
-            range: `${cfg.name}!${col}${sheetRow}`,
-            valueInputOption: 'RAW',
-            requestBody: { values: [[body[field]]] },
-          });
+          updates.push({ range: `${cfg.name}!${col}${sheetRow}`, values: [[body[field]]] });
         }
+      }
+      if (updates.length) {
+        await sheets.spreadsheets.values.batchUpdate({
+          spreadsheetId: SHEET_ID,
+          requestBody: { valueInputOption: 'RAW', data: updates },
+        });
       }
       return ok({ ok: true });
     }
