@@ -970,6 +970,10 @@ async function submitTransfer() {
     alert('Por favor preenche todos os campos obrigatórios (*).');
     return;
   }
+  if (new Date(date + 'T' + time) < new Date()) {
+    alert('A data/hora do serviço não pode estar no passado. Por favor verifica a data e a hora escolhidas.');
+    return;
+  }
   const origin = document.getElementById('f-origin').value.trim();
   const destination = document.getElementById('f-destination').value.trim();
   const tourPickup = document.getElementById('f-tour-pickup').value.trim();
@@ -1293,7 +1297,7 @@ function renderPanel() {
             '<div class="edit-group" style="grid-column:1/-1"><label>Telemóvel do cliente</label><input type="tel" id="e-phone-' + t.id + '" value="' + (t.phone||'') + '" /></div>' +
           '</div>' +
           '<div class="edit-row">' +
-            '<div class="edit-group"><label>Data</label><input type="date" id="e-date-' + t.id + '" value="' + (t.date ? t.date.split('T')[0] : '') + '" /></div>' +
+            '<div class="edit-group"><label>Data</label><input type="date" id="e-date-' + t.id + '" min="' + new Date().toISOString().split('T')[0] + '" value="' + (t.date ? t.date.split('T')[0] : '') + '" /></div>' +
             '<div class="edit-group"><label>Hora de recolha</label><input type="time" id="e-time-' + t.id + '" value="' + extractTime(t.time) + '" /></div>' +
           '</div>' +
           '<div class="edit-row">' +
@@ -1365,12 +1369,19 @@ async function saveEdit(id) {
   const t = transfers.find(x => x.id == id);
   if (!t) return;
 
+  const editedDate = document.getElementById('e-date-' + id).value;
+  const editedTime = document.getElementById('e-time-' + id).value;
+  if (new Date(editedDate + 'T' + editedTime) < new Date()) {
+    alert('A data/hora do serviço não pode estar no passado. Por favor verifica a data e a hora escolhidas.');
+    return;
+  }
+
   const updated = {
     id: t.id,
     name: document.getElementById('e-name-' + id).value.trim(),
     phone: document.getElementById('e-phone-' + id).value.trim(),
-    date: document.getElementById('e-date-' + id).value,
-    time: document.getElementById('e-time-' + id).value,
+    date: editedDate,
+    time: editedTime,
     adults: parseInt(document.getElementById('e-adults-' + id).value) || 0,
     children: parseInt(document.getElementById('e-children-' + id).value) || 0,
     luggage: parseInt(document.getElementById('e-luggage-' + id).value) || 0,
@@ -1404,6 +1415,9 @@ async function saveEdit(id) {
 document.getElementById('header-hotel-name').textContent = HOTEL;
 const hotelReady = initHotelName();
 setPanelView('lista');
+
+// Prevent booking a date in the past
+document.getElementById('f-date').min = new Date().toISOString().split('T')[0];
 
 function toClipboard(id) {
   const el = document.getElementById('copy-' + id);
