@@ -1547,6 +1547,7 @@ function openViewServiceModal(id) {
 
   const driverName = drivers.find(d => String(d.id) === String(t.driver))?.name;
   const rows = [];
+  rows.push(`<div style="grid-column:1/-1">👤 Cliente: <strong>${t.name || '—'}</strong></div>`);
   if (t.service_type === 'tour') {
     rows.push(`<div style="grid-column:1/-1">🗺️ ${t.origin||'—'} → ${t.destination||'—'} → ${t.dropoff||'—'}</div>`);
     rows.push(`<div>📅 <strong>${fmtDate(t.date)}</strong></div>`);
