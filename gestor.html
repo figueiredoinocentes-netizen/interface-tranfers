@@ -293,7 +293,7 @@
     .team-grid { grid-template-columns: 1fr; }
 
     .dash-kpi-grid { grid-template-columns: 1fr !important; }
-    #dash-scope, #dash-driver { width: 100%; min-width: 0 !important; }
+    #dash-scope, #dash-driver, #dash-vehicle { width: 100%; min-width: 0 !important; }
     #dash-period-label { min-width: 0 !important; }
 
     .dir-toggle, .form-row, .form-grid-2 { grid-template-columns: 1fr !important; }
@@ -502,6 +502,9 @@
       </select>
       <select class="add-input" id="dash-driver" onchange="setDashDriver(this.value)" style="min-width:180px;">
         <option value="todos">Todos os motoristas</option>
+      </select>
+      <select class="add-input" id="dash-vehicle" onchange="setDashVehicle(this.value)" style="min-width:180px;">
+        <option value="todos">Todas as viaturas</option>
       </select>
     </div>
 
@@ -1301,6 +1304,7 @@ async function removePartnerFromModal() {
 let dashPeriodType = 'semanal';
 let dashScope = 'geral';
 let dashDriver = 'todos';
+let dashVehicle = 'todos';
 let dashRefDate = new Date();
 
 function setDashPeriod(type) {
@@ -1317,6 +1321,11 @@ function setDashScope(scope) {
 
 function setDashDriver(driverId) {
   dashDriver = driverId;
+  renderDashboard();
+}
+
+function setDashVehicle(vehicleId) {
+  dashVehicle = vehicleId;
   renderDashboard();
 }
 
@@ -1368,6 +1377,14 @@ function populateDashDriverOptions() {
   if ([...sel.options].some(o => o.value === current)) sel.value = current;
 }
 
+function populateDashVehicleOptions() {
+  const sel = document.getElementById('dash-vehicle');
+  const current = sel.value;
+  sel.innerHTML = '<option value="todos">Todas as viaturas</option>' +
+    vehicles.map(v => `<option value="${v.id}">${v.name}</option>`).join('');
+  if ([...sel.options].some(o => o.value === current)) sel.value = current;
+}
+
 function exportDashboardExcel() {
   const table = document.getElementById('dash-table');
   const rows = Array.from(table.querySelectorAll('tr'));
@@ -1383,7 +1400,8 @@ function exportDashboardExcel() {
   const { label } = getDashRange();
   const scopeLabel = dashScope === 'geral' ? 'todos-parceiros' : (partners.find(p => String(p.id) === String(dashScope))?.slug || dashScope);
   const driverLabel = dashDriver === 'todos' ? '' : '-' + (drivers.find(d => String(d.id) === String(dashDriver))?.name || dashDriver).toLowerCase().replace(/\s+/g, '-');
-  const filename = `dashboard-vianta-${scopeLabel}${driverLabel}-${label.replace(/\s|\/|—/g, '-')}.csv`;
+  const vehicleLabel = dashVehicle === 'todos' ? '' : '-' + (vehicles.find(v => String(v.id) === String(dashVehicle))?.name || dashVehicle).toLowerCase().replace(/\s+/g, '-');
+  const filename = `dashboard-vianta-${scopeLabel}${driverLabel}${vehicleLabel}-${label.replace(/\s|\/|—/g, '-')}.csv`;
 
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
@@ -1399,6 +1417,7 @@ function exportDashboardExcel() {
 function renderDashboard() {
   populateDashScopeOptions();
   populateDashDriverOptions();
+  populateDashVehicleOptions();
   const { start, end, label } = getDashRange();
   document.getElementById('dash-period-label').textContent = label;
 
@@ -1408,6 +1427,7 @@ function renderDashboard() {
     if (td < start || td > end) return false;
     if (dashScope !== 'geral' && String(t.partner_id) !== String(dashScope)) return false;
     if (dashDriver !== 'todos' && String(t.driver) !== String(dashDriver)) return false;
+    if (dashVehicle !== 'todos' && String(t.vehicle) !== String(dashVehicle)) return false;
     return true;
   });
 
@@ -1448,17 +1468,18 @@ function renderDashboard() {
     });
     tbody.innerHTML = rows.length ? rows.join('') : '<tr><td colspan="5" class="empty">Sem serviços faturados neste período.</td></tr>';
   } else {
-    thead.innerHTML = '<tr><th>Cliente</th><th>Percurso</th><th>Veículo</th><th>Motorista</th><th>Data</th><th>Preço</th><th>Comissão parceiro</th><th>Comissão Vianta</th></tr>';
+    thead.innerHTML = '<tr><th>Cliente</th><th>Percurso</th><th>Tipo</th><th>Viatura</th><th>Motorista</th><th>Data</th><th>Preço</th><th>Comissão parceiro</th><th>Comissão Vianta</th></tr>';
     const sorted = [...inRange].sort((a,b) => a.date.localeCompare(b.date));
     const rows = sorted.map(t => {
       const price = parseFloat(t.price) || 0;
       const pct = commissionPctFor(t.partner_id);
       const cut = price * pct / 100;
-      const vehicleLabel = t.car_type === 'van' ? '🚐 Van' : '🚗 Sedan';
+      const carTypeLabel = t.car_type === 'van' ? '🚐 Van' : '🚗 Sedan';
+      const vehicleName = vehicles.find(v => String(v.id) === String(t.vehicle))?.name || '—';
       const driverLabel = drivers.find(d => String(d.id) === String(t.driver))?.name || '—';
-      return `<tr><td>${t.name || '—'}</td><td>${dirLabel(t)}</td><td>${vehicleLabel}</td><td>${driverLabel}</td><td>${fmtDate(t.date)}</td><td>€${price.toFixed(2)}</td><td>€${cut.toFixed(2)}</td><td>€${(price-cut).toFixed(2)}</td></tr>`;
+      return `<tr><td>${t.name || '—'}</td><td>${dirLabel(t)}</td><td>${carTypeLabel}</td><td>${vehicleName}</td><td>${driverLabel}</td><td>${fmtDate(t.date)}</td><td>€${price.toFixed(2)}</td><td>€${cut.toFixed(2)}</td><td>€${(price-cut).toFixed(2)}</td></tr>`;
     });
-    tbody.innerHTML = rows.length ? rows.join('') : '<tr><td colspan="8" class="empty">Sem serviços faturados neste período.</td></tr>';
+    tbody.innerHTML = rows.length ? rows.join('') : '<tr><td colspan="9" class="empty">Sem serviços faturados neste período.</td></tr>';
   }
 }
 
