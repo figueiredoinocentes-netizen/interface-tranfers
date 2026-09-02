@@ -549,7 +549,7 @@
 
       <div class="section-label">Tipo de serviço</div>
       <div class="dir-toggle" style="grid-template-columns:1fr 1fr;">
-        <button type="button" class="dir-btn selected" id="ns-btn-type-transfer" onclick="setNsServiceType('transfer')">
+        <button type="button" class="dir-btn" id="ns-btn-type-transfer" onclick="setNsServiceType('transfer')">
           <span class="dir-icon">🚗</span>
           <span class="dir-label">Transfer</span>
         </button>
@@ -1744,11 +1744,19 @@ let nsDir = 'h2a';
 let nsCarType = 'sedan';
 let nsPayment = 'driver';
 let nsServiceType = 'transfer';
+let nsServiceTypeChosen = false;
 
-function setNsServiceType(t) {
+function setNsServiceType(t, markChosen = true) {
   nsServiceType = t;
-  document.getElementById('ns-btn-type-transfer').classList.toggle('selected', t === 'transfer');
-  document.getElementById('ns-btn-type-tour').classList.toggle('selected', t === 'tour');
+  if (markChosen) {
+    nsServiceTypeChosen = true;
+    document.getElementById('ns-btn-type-transfer').classList.toggle('selected', t === 'transfer');
+    document.getElementById('ns-btn-type-tour').classList.toggle('selected', t === 'tour');
+  } else {
+    nsServiceTypeChosen = false;
+    document.getElementById('ns-btn-type-transfer').classList.remove('selected');
+    document.getElementById('ns-btn-type-tour').classList.remove('selected');
+  }
   document.getElementById('ns-flight-section').style.display = t === 'tour' ? 'none' : 'block';
   document.getElementById('ns-dir-section').style.display = t === 'tour' ? 'none' : 'block';
   document.getElementById('ns-tour-route-section').style.display = t === 'tour' ? 'block' : 'none';
@@ -1860,7 +1868,7 @@ function openNewServiceModal() {
   setNsDir('h2a');
   setNsCarType('sedan');
   setNsPayment('driver');
-  setNsServiceType('transfer');
+  setNsServiceType('transfer', false);
   toggleNsChildAges();
 
   document.getElementById('new-service-modal').style.display = 'flex';
@@ -1888,6 +1896,7 @@ async function saveNewService() {
 
   if (!p) { showToast('Escolhe o parceiro'); return; }
   if (!name || !adults || !date || !time) { showToast('Preenche todos os campos obrigatórios (*)'); return; }
+  if (!nsServiceTypeChosen) { showToast('Confirma se é Transfer ou Tour antes de guardar'); return; }
   if (nsServiceType === 'tour') {
     if (!tourPickup || !tourDestination || !tourDropoff) { showToast('Indica o pickup, destino e drop off do tour'); return; }
     if (!tourArrival) { showToast('A hora de fim é obrigatória para Tours'); return; }

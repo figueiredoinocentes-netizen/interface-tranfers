@@ -607,7 +607,7 @@
 
     <div class="section-label">Tipo de serviço</div>
     <div class="dir-toggle" style="grid-template-columns:1fr 1fr;">
-      <button class="dir-btn selected" id="btn-type-transfer" onclick="setServiceType('transfer')">
+      <button class="dir-btn" id="btn-type-transfer" onclick="setServiceType('transfer')">
         <span class="dir-icon">🚗</span>
         <span class="dir-label">Transfer</span>
       </button>
@@ -857,9 +857,11 @@ let dir = 'h2a';
 let payment = 'driver';
 let carType = 'sedan';
 let serviceType = 'transfer';
+let serviceTypeChosen = false;
 
 function setServiceType(t) {
   serviceType = t;
+  serviceTypeChosen = true;
   document.getElementById('btn-type-transfer').classList.toggle('selected', t === 'transfer');
   document.getElementById('btn-type-tour').classList.toggle('selected', t === 'tour');
   document.getElementById('flight-section').style.display = t === 'tour' ? 'none' : 'block';
@@ -968,6 +970,10 @@ async function submitTransfer() {
   const phone = document.getElementById('f-phone').value.trim();
   if (!name || !adults || !date || !time) {
     alert('Por favor preenche todos os campos obrigatórios (*).');
+    return;
+  }
+  if (!serviceTypeChosen) {
+    alert('Por favor confirma se este pedido é um Transfer ou um Tour, no topo do formulário.');
     return;
   }
   if (new Date(date + 'T' + time) < new Date()) {
