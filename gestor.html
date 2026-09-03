@@ -1306,6 +1306,7 @@ let dashScope = 'geral';
 let dashDriver = 'todos';
 let dashVehicle = 'todos';
 let dashRefDate = new Date();
+let dashInRange = [];
 
 function setDashPeriod(type) {
   dashPeriodType = type;
@@ -1386,15 +1387,41 @@ function populateDashVehicleOptions() {
 }
 
 function exportDashboardExcel() {
-  const table = document.getElementById('dash-table');
-  const rows = Array.from(table.querySelectorAll('tr'));
-  if (!rows.length) { showToast('Sem dados para exportar'); return; }
+  if (!dashInRange.length) { showToast('Sem dados para exportar'); return; }
 
-  const csvRows = rows.map(row =>
-    Array.from(row.querySelectorAll('th, td'))
-      .map(cell => '"' + cell.textContent.trim().replace(/"/g, '""') + '"')
-      .join(';')
-  );
+  const esc = v => '"' + String(v).replace(/"/g, '""') + '"';
+  const header = ['Parceiro', 'Cliente', 'Percurso', 'Tipo', 'Viatura', 'Motorista', 'Data', 'Preço', 'Comissão parceiro', 'Comissão Vianta'];
+  const sorted = [...dashInRange].sort((a, b) => a.date.localeCompare(b.date));
+
+  let totalRevenue = 0, totalPartner = 0, totalVianta = 0;
+  const dataRows = sorted.map(t => {
+    const price = parseFloat(t.price) || 0;
+    const pct = commissionPctFor(t.partner_id);
+    const cut = price * pct / 100;
+    totalRevenue += price;
+    totalPartner += cut;
+    totalVianta += (price - cut);
+    const p = partners.find(x => String(x.id) === String(t.partner_id));
+    const carTypeLabel = t.car_type === 'van' ? 'Van' : 'Sedan';
+    const vehicleName = vehicles.find(v => String(v.id) === String(t.vehicle))?.name || '—';
+    const driverLabel = drivers.find(d => String(d.id) === String(t.driver))?.name || '—';
+    return [
+      p ? p.name : '—',
+      t.name || '—',
+      dirLabel(t).replace(/<[^>]+>/g, ''),
+      carTypeLabel,
+      vehicleName,
+      driverLabel,
+      fmtDate(t.date),
+      '€' + price.toFixed(2),
+      '€' + cut.toFixed(2),
+      '€' + (price - cut).toFixed(2)
+    ].map(esc).join(';');
+  });
+
+  const totalsRow = ['TOTAL', '', '', '', '', '', '', '€' + totalRevenue.toFixed(2), '€' + totalPartner.toFixed(2), '€' + totalVianta.toFixed(2)].map(esc).join(';');
+
+  const csvRows = [header.map(esc).join(';'), ...dataRows, totalsRow];
   const csv = '﻿' + csvRows.join('\r\n'); // BOM for correct accents in Excel
 
   const { label } = getDashRange();
@@ -1430,6 +1457,7 @@ function renderDashboard() {
     if (dashVehicle !== 'todos' && String(t.vehicle) !== String(dashVehicle)) return false;
     return true;
   });
+  dashInRange = inRange;
 
   let totalRevenue = 0, totalPartner = 0, totalVianta = 0;
   inRange.forEach(t => {
