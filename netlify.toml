@@ -1,6 +1,5 @@
 [build]
   functions = "netlify/functions"
-  publish = "."
 
 [build.environment]
   # VAPID_PUBLIC_KEY is intentionally public (embedded client-side for Web Push) —
