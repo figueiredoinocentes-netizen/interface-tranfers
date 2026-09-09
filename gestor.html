@@ -1390,7 +1390,7 @@ function exportDashboardExcel() {
   if (!dashInRange.length) { showToast('Sem dados para exportar'); return; }
 
   const esc = v => '"' + String(v).replace(/"/g, '""') + '"';
-  const header = ['Parceiro', 'Cliente', 'Percurso', 'Tipo', 'Viatura', 'Motorista', 'Data', 'Preço', 'Comissão parceiro', 'Comissão Vianta'];
+  const header = ['Parceiro', 'Cliente', 'Percurso', 'Tipo', 'Viatura', 'Motorista', 'Pagamento', 'Data', 'Preço', 'Comissão parceiro', 'Comissão Vianta'];
   const sorted = [...dashInRange].sort((a, b) => a.date.localeCompare(b.date));
 
   let totalRevenue = 0, totalPartner = 0, totalVianta = 0;
@@ -1412,6 +1412,7 @@ function exportDashboardExcel() {
       carTypeLabel,
       vehicleName,
       driverLabel,
+      t.payment === 'hotel' ? 'Ao hotel' : 'Ao motorista',
       fmtDate(t.date),
       '€' + price.toFixed(2),
       '€' + cut.toFixed(2),
@@ -1419,7 +1420,7 @@ function exportDashboardExcel() {
     ].map(esc).join(';');
   });
 
-  const totalsRow = ['TOTAL', '', '', '', '', '', '', '€' + totalRevenue.toFixed(2), '€' + totalPartner.toFixed(2), '€' + totalVianta.toFixed(2)].map(esc).join(';');
+  const totalsRow = ['TOTAL', '', '', '', '', '', '', '', '€' + totalRevenue.toFixed(2), '€' + totalPartner.toFixed(2), '€' + totalVianta.toFixed(2)].map(esc).join(';');
 
   const csvRows = [header.map(esc).join(';'), ...dataRows, totalsRow];
   const csv = '﻿' + csvRows.join('\r\n'); // BOM for correct accents in Excel
@@ -1496,7 +1497,7 @@ function renderDashboard() {
     });
     tbody.innerHTML = rows.length ? rows.join('') : '<tr><td colspan="5" class="empty">Sem serviços faturados neste período.</td></tr>';
   } else {
-    thead.innerHTML = '<tr><th>Cliente</th><th>Percurso</th><th>Tipo</th><th>Viatura</th><th>Motorista</th><th>Data</th><th>Preço</th><th>Comissão parceiro</th><th>Comissão Vianta</th></tr>';
+    thead.innerHTML = '<tr><th>Cliente</th><th>Percurso</th><th>Tipo</th><th>Viatura</th><th>Motorista</th><th>Pagamento</th><th>Data</th><th>Preço</th><th>Comissão parceiro</th><th>Comissão Vianta</th></tr>';
     const sorted = [...inRange].sort((a,b) => a.date.localeCompare(b.date));
     const rows = sorted.map(t => {
       const price = parseFloat(t.price) || 0;
@@ -1505,9 +1506,9 @@ function renderDashboard() {
       const carTypeLabel = t.car_type === 'van' ? '🚐 Van' : '🚗 Sedan';
       const vehicleName = vehicles.find(v => String(v.id) === String(t.vehicle))?.name || '—';
       const driverLabel = drivers.find(d => String(d.id) === String(t.driver))?.name || '—';
-      return `<tr><td>${t.name || '—'}</td><td>${dirLabel(t)}</td><td>${carTypeLabel}</td><td>${vehicleName}</td><td>${driverLabel}</td><td>${fmtDate(t.date)}</td><td>€${price.toFixed(2)}</td><td>€${cut.toFixed(2)}</td><td>€${(price-cut).toFixed(2)}</td></tr>`;
+      return `<tr><td>${t.name || '—'}</td><td>${dirLabel(t)}</td><td>${carTypeLabel}</td><td>${vehicleName}</td><td>${driverLabel}</td><td>${t.payment === 'hotel' ? 'Ao hotel' : 'Ao motorista'}</td><td>${fmtDate(t.date)}</td><td>€${price.toFixed(2)}</td><td>€${cut.toFixed(2)}</td><td>€${(price-cut).toFixed(2)}</td></tr>`;
     });
-    tbody.innerHTML = rows.length ? rows.join('') : '<tr><td colspan="9" class="empty">Sem serviços faturados neste período.</td></tr>';
+    tbody.innerHTML = rows.length ? rows.join('') : '<tr><td colspan="10" class="empty">Sem serviços faturados neste período.</td></tr>';
   }
 }
 
