@@ -548,7 +548,7 @@
       <button onclick="closeImportModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted);line-height:1;">×</button>
     </div>
 
-    <div id="import-step-1">
+    <div>
       <div class="section-label">1. Selecionar ficheiro</div>
       <div style="border:2px dashed var(--border);border-radius:var(--radius-lg);padding:32px;text-align:center;cursor:pointer;transition:border-color 0.15s;background:var(--surface);" onclick="document.getElementById('import-file-input').click()" id="import-dropzone">
         <div style="font-size:36px;margin-bottom:8px;">📄</div>
@@ -577,15 +577,32 @@
         <button class="btn-add" id="import-confirm-btn" onclick="confirmImport()" style="display:none;">Importar</button>
       </div>
     </div>
+  </div>
+</div>
 
-    <div id="import-step-2" style="display:none;">
-      <div style="text-align:center;padding:32px 0;">
-        <div style="font-size:40px;margin-bottom:12px;" id="import-result-icon">✅</div>
-        <div id="import-result-text" style="font-size:16px;font-weight:500;"></div>
-        <div id="import-result-sub" style="font-size:13px;color:var(--muted);margin-top:6px;"></div>
-      </div>
-      <div style="display:flex;gap:8px;justify-content:flex-end;">
-        <button onclick="closeImportModal()" style="background:transparent;border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 16px;cursor:pointer;font-family:inherit;font-size:13px;">Fechar</button>
+<!-- BATCH ASSIGN MODAL -- abrir depois de importar -->
+<div id="batch-assign-modal" onclick="if(event.target===this)closeBatchAssignModal()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:100;align-items:flex-start;justify-content:center;">
+  <div style="background:var(--bg);border-radius:var(--radius-lg);width:90vw;max-width:1100px;max-height:88vh;overflow-y:auto;padding:24px;margin-top:20px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <div style="font-size:16px;font-weight:600;" id="batch-title">Serviços importados</div>
+      <button onclick="closeBatchAssignModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted);line-height:1;">×</button>
+    </div>
+
+    <div style="font-size:12px;color:var(--muted);margin-bottom:14px;" id="batch-subtitle"></div>
+
+    <div class="table-wrap">
+      <table class="transfers-table">
+        <thead>
+          <tr><th>Cliente</th><th>Percurso</th><th>Data & Hora</th><th>Preço</th><th>Motorista</th><th>Viatura</th><th></th></tr>
+        </thead>
+        <tbody id="batch-tbody"></tbody>
+      </table>
+    </div>
+
+    <div style="display:flex;gap:8px;justify-content:space-between;margin-top:14px;">
+      <span id="batch-progress" style="font-size:12px;color:var(--muted);"></span>
+      <div style="display:flex;gap:8px;">
+        <button onclick="closeBatchAssignModal()" style="background:transparent;border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 16px;cursor:pointer;font-family:inherit;font-size:13px;">Fechar</button>
       </div>
     </div>
   </div>
@@ -2189,8 +2206,6 @@ function openImportModal() {
   const sel = document.getElementById('import-partner');
   sel.innerHTML = '<option value="">— seleciona —</option>' +
     partners.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
-  document.getElementById('import-step-1').style.display = '';
-  document.getElementById('import-step-2').style.display = 'none';
   document.getElementById('import-preview').style.display = 'none';
   document.getElementById('import-confirm-btn').style.display = 'none';
   document.getElementById('import-file-name').style.display = 'none';
@@ -2325,22 +2340,114 @@ async function confirmImport() {
     if (!res.ok) throw new Error(data.error || 'Erro no servidor');
 
     const count = data.imported || 0;
-    document.getElementById('import-step-1').style.display = 'none';
-    document.getElementById('import-step-2').style.display = '';
-    document.getElementById('import-result-icon').textContent = '✅';
-    document.getElementById('import-result-text').textContent =
-      `${count} serviços importados com sucesso!`;
-    document.getElementById('import-result-sub').textContent =
-      'Aparecem na lista de Pendentes — associa motorista e viatura para confirmar.';
-
+    const importedIds = importData.map(d => d.id);
     importData = [];
+    closeImportModal();
+
+    // Reload data and open batch assignment modal
     await loadAll();
-    // Switch to pendentes filter
-    setFilter('pendente', document.querySelector('#filters .filter-btn'));
+    openBatchAssignModal(importedIds);
+    showToast(`${count} serviços importados ✓`);
   } catch (e) {
     showToast('Erro: ' + e.message);
     btn.disabled = false;
     btn.textContent = 'Importar';
+  }
+}
+
+// ── BATCH ASSIGNMENT MODAL ──────────────────────
+let batchAssignIds = [];
+
+function openBatchAssignModal(ids) {
+  batchAssignIds = ids;
+  const items = ids.map(id => transfers.find(t => String(t.id) === String(id))).filter(Boolean);
+  if (!items.length) { showToast('Sem serviços para atribuir'); return; }
+
+  document.getElementById('batch-title').textContent = `📋 ${items.length} serviços importados`;
+  document.getElementById('batch-subtitle').textContent = 'Atribui motorista e viatura a cada serviço para confirmar.';
+
+  renderBatchAssign(items);
+  document.getElementById('batch-assign-modal').style.display = 'flex';
+}
+
+function closeBatchAssignModal() {
+  document.getElementById('batch-assign-modal').style.display = 'none';
+}
+
+function renderBatchAssign(items) {
+  const tbody = document.getElementById('batch-tbody');
+  const assigned = items.filter(t => t.driver && t.vehicle).length;
+
+  document.getElementById('batch-progress').textContent =
+    `${assigned} / ${items.length} confirmados`;
+
+  tbody.innerHTML = items.map(t => {
+    const driverOpts = drivers.map(d => `<option value="${d.id}" ${String(t.driver) === String(d.id) ? 'selected' : ''}>${d.name}</option>`).join('');
+    const vehicleOpts = vehicles.map(v => `<option value="${v.id}" ${String(t.vehicle) === String(v.id) ? 'selected' : ''}>${v.name}</option>`).join('');
+    const isSaved = t.driver && t.vehicle;
+    return `<tr style="${isSaved ? 'opacity:0.6;' : ''}border-left:3px solid ${statusColor(t.status)};">
+      <td>
+        <div class="cell-name">${t.name || '—'}</div>
+        <div class="cell-hotel">${partnerName(t)}</div>
+      </td>
+      <td>${dirLabel(t)}</td>
+      <td>
+        <div>${fmtDate(t.date)}</div>
+        <div class="cell-sub">${fmtTime(t.time)}</div>
+      </td>
+      <td>${t.price ? '€' + parseFloat(t.price).toFixed(2) : '—'}</td>
+      <td>
+        <select class="inline-select" id="bd-driver-${t.id}" onchange="onBatchChange('${t.id}')" style="min-width:130px;">
+          <option value="">— motorista —</option>
+          ${driverOpts}
+        </select>
+      </td>
+      <td>
+        <select class="inline-select" id="bd-vehicle-${t.id}" onchange="onBatchChange('${t.id}')" style="min-width:130px;">
+          <option value="">— viatura —</option>
+          ${vehicleOpts}
+        </select>
+      </td>
+      <td>
+        <button class="btn-save" id="bd-save-${t.id}" onclick="saveBatchAssignment('${t.id}')" ${t.driver && t.vehicle ? 'disabled' : ''}>${isSaved ? '✓' : 'Guardar'}</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function onBatchChange(id) {
+  const btn = document.getElementById('bd-save-' + id);
+  btn.textContent = 'Guardar';
+  btn.disabled = false;
+}
+
+async function saveBatchAssignment(id) {
+  const driver = document.getElementById('bd-driver-' + id).value;
+  const vehicle = document.getElementById('bd-vehicle-' + id).value;
+  if (!driver || !vehicle) { showToast('Seleciona motorista e viatura'); return; }
+
+  const btn = document.getElementById('bd-save-' + id);
+  btn.disabled = true;
+  btn.textContent = 'A guardar…';
+
+  try {
+    const res = await fetch(`${API}?type=transfers`, {
+      method: 'PUT',
+      body: JSON.stringify({ id, driver, vehicle, status: 'confirmado' }),
+    });
+    if (!res.ok) throw new Error('Erro ao guardar');
+
+    btn.textContent = '✓';
+    await loadAll();
+
+    // Re-render modal with updated data
+    const items = batchAssignIds.map(i => transfers.find(t => String(t.id) === String(i))).filter(Boolean);
+    renderBatchAssign(items);
+    showToast('Serviço confirmado ✓');
+  } catch (e) {
+    showToast('Erro: ' + e.message);
+    btn.disabled = false;
+    btn.textContent = 'Guardar';
   }
 }
 
