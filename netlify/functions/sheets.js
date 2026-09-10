@@ -1,7 +1,7 @@
 const { google } = require('googleapis');
 const webpush = require('web-push');
 
-const SHEET_ID = '1fwGueaZ3otmqO1IODXDv7qe3NayQson1ICgnQHBJc0E';
+const SHEET_ID = '1ygrewvVvzo4RVFc8jqCOi2oGiEIhpgTsd3TZ-HTz7xE';
 
 // Converts a 0-based column index to its spreadsheet letter (0->A, 25->Z, 26->AA, ...)
 function colLetter(index) {
