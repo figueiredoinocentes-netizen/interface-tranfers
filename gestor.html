@@ -357,8 +357,10 @@
         <div class="page-header-sub">Todos os pedidos de transfer</div>
       </div>
     </div>
-    <button class="btn-add" onclick="openNewServiceModal()">+ Novo Serviço</button>
-    <button class="btn-add" onclick="openImportModal()" style="background:transparent;border:1.5px solid var(--gold);color:var(--gold);margin-left:8px;">📥 Importar Excel</button>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <button class="btn-add" onclick="openNewServiceModal()">+ Novo Serviço</button>
+      <button class="btn-add" onclick="openImportModal()" style="background:transparent;border:1.5px solid var(--gold);color:var(--gold);">📥 Importar Excel</button>
+    </div>
   </div>
   <div class="container">
     <div class="filters" id="filters" style="justify-content:space-between;">
