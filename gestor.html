@@ -561,7 +561,7 @@
       <div class="section-label" style="margin-top:20px;">2. Parceiro</div>
       <div class="form-group" style="margin-top:0;">
         <label>Seleciona o parceiro <span class="req">*</span></label>
-        <select class="add-input" id="import-partner" style="width:100%;"></select>
+        <select class="add-input" id="import-partner" onchange="onImportPartnerChange()" style="width:100%;"></select>
       </div>
 
       <div id="import-preview" style="display:none;margin-top:16px;">
@@ -2213,6 +2213,13 @@ function onImportFileSelected() {
   document.getElementById('import-confirm-btn').style.display = 'none';
   importData = [];
   previewImport();
+}
+
+function onImportPartnerChange() {
+  // Re-trigger preview if file already selected
+  if (document.getElementById('import-file-input').files[0]) {
+    previewImport();
+  }
 }
 
 async function previewImport() {
