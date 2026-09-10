@@ -174,6 +174,28 @@ exports.handler = async (event) => {
     if (event.httpMethod === 'POST') {
       const existingRows = await getRows(sheets, type);
 
+      // BATCH IMPORT — array of transfers in body.transfers
+      if (type === 'transfers' && Array.isArray(body.transfers)) {
+        const rows = body.transfers.map(t => {
+          const newId = t.id || String(Date.now() + '_' + Math.random().toString(36).slice(2, 8));
+          const row = cfg.headers.map(h => {
+            if (h === 'id') return newId;
+            if (h === 'created_at') return new Date().toISOString();
+            if (h === 'status') return t.status || 'pendente';
+            return t[h] ?? '';
+          });
+          return row;
+        });
+        // Write all rows at once
+        await sheets.spreadsheets.values.append({
+          spreadsheetId: SHEET_ID,
+          range: `${cfg.name}!A1`,
+          valueInputOption: 'RAW',
+          requestBody: { values: rows },
+        });
+        return ok({ ok: true, imported: rows.length });
+      }
+
       if (type === 'subscriptions' && existingRows.some(r => r.endpoint === body.endpoint)) {
         return ok({ ok: true, alreadySubscribed: true });
       }

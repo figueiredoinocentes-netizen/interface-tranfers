@@ -11,6 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=DM+Sans:wght@300;400;500&family=DM+Mono&display=swap" rel="stylesheet" />
 <script>/* supabase removed */</script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -357,6 +358,7 @@
       </div>
     </div>
     <button class="btn-add" onclick="openNewServiceModal()">+ Novo Serviço</button>
+    <button class="btn-add" onclick="openImportModal()" style="background:transparent;border:1.5px solid var(--gold);color:var(--gold);margin-left:8px;">📥 Importar Excel</button>
   </div>
   <div class="container">
     <div class="filters" id="filters" style="justify-content:space-between;">
@@ -535,6 +537,57 @@
       </table>
     </div>
 
+  </div>
+</div>
+
+<!-- IMPORT MODAL -->
+<div id="import-modal" onclick="if(event.target===this)closeImportModal()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:100;align-items:center;justify-content:center;">
+  <div style="background:var(--bg);border-radius:var(--radius-lg);width:540px;max-width:92vw;max-height:90vh;overflow-y:auto;padding:24px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+      <div style="font-size:16px;font-weight:600;">Importar serviços (Excel)</div>
+      <button onclick="closeImportModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted);line-height:1;">×</button>
+    </div>
+
+    <div id="import-step-1">
+      <div class="section-label">1. Selecionar ficheiro</div>
+      <div style="border:2px dashed var(--border);border-radius:var(--radius-lg);padding:32px;text-align:center;cursor:pointer;transition:border-color 0.15s;background:var(--surface);" onclick="document.getElementById('import-file-input').click()" id="import-dropzone">
+        <div style="font-size:36px;margin-bottom:8px;">📄</div>
+        <div style="font-size:14px;font-weight:500;">Clique para selecionar o ficheiro Excel</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px;">.xlsx do parceiro</div>
+        <div id="import-file-name" style="display:none;margin-top:10px;font-size:13px;font-weight:500;color:var(--gold);"></div>
+      </div>
+      <input type="file" id="import-file-input" accept=".xlsx" style="display:none" onchange="onImportFileSelected()" />
+
+      <div class="section-label" style="margin-top:20px;">2. Parceiro</div>
+      <div class="form-group" style="margin-top:0;">
+        <label>Seleciona o parceiro <span class="req">*</span></label>
+        <select class="add-input" id="import-partner" style="width:100%;"></select>
+      </div>
+
+      <div id="import-preview" style="display:none;margin-top:16px;">
+        <div class="section-label" style="margin-top:0;">3. Pré-visualização</div>
+        <div style="background:var(--surface);border-radius:var(--radius);padding:12px 16px;border:1px solid var(--border);">
+          <div id="import-preview-count" style="font-size:14px;font-weight:500;"></div>
+          <div id="import-preview-dupes" style="font-size:12px;color:var(--muted);margin-top:4px;"></div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:22px;">
+        <button onclick="closeImportModal()" style="background:transparent;border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 16px;cursor:pointer;font-family:inherit;font-size:13px;">Cancelar</button>
+        <button class="btn-add" id="import-confirm-btn" onclick="confirmImport()" style="display:none;">Importar</button>
+      </div>
+    </div>
+
+    <div id="import-step-2" style="display:none;">
+      <div style="text-align:center;padding:32px 0;">
+        <div style="font-size:40px;margin-bottom:12px;" id="import-result-icon">✅</div>
+        <div id="import-result-text" style="font-size:16px;font-weight:500;"></div>
+        <div id="import-result-sub" style="font-size:13px;color:var(--muted);margin-top:6px;"></div>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;">
+        <button onclick="closeImportModal()" style="background:transparent;border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 16px;cursor:pointer;font-family:inherit;font-size:13px;">Fechar</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1525,21 +1578,65 @@ function renderTransfers() {
     return;
   }
 
-  tbody.innerHTML = list.map(t => {
-    const border = statusColor(t.status);
-    return `<tr class="service-row" style="cursor:pointer;border-left:3px solid ${border};" onclick="openViewServiceModal('${t.id}')">
-      <td>
-        <div class="cell-name">${t.name || '—'}</div>
-        <div class="cell-hotel">${partnerName(t)}</div>
-      </td>
-      <td>${dirLabel(t)}</td>
-      <td>${t.car_type === 'van' ? '🚐 Van' : '🚗 Sedan'}</td>
-      <td>
-        <div>${fmtDate(t.date)}</div>
-        <div class="cell-sub">${fmtTime(t.time)}</div>
-      </td>
-    </tr>`;
-  }).join('');
+  // Pendentes get inline driver/vehicle dropdowns
+  if (currentFilter === 'pendente') {
+    const headerRow = document.querySelector('.transfers-table thead tr');
+    headerRow.innerHTML = '<th>Cliente / Parceiro</th><th>Percurso</th><th>Data & Hora</th><th>Preço</th><th>Motorista</th><th>Viatura</th><th></th>';
+    headerRow.querySelectorAll('th').forEach(th => th.style.cssText = '');
+
+    tbody.innerHTML = list.map(t => {
+      const driverOpts = drivers.map(d => `<option value="${d.id}" ${String(t.driver) === String(d.id) ? 'selected' : ''}>${d.name}</option>`).join('');
+      const vehicleOpts = vehicles.map(v => `<option value="${v.id}" ${String(t.vehicle) === String(v.id) ? 'selected' : ''}>${v.name}</option>`).join('');
+      const isSaved = t.driver && t.vehicle;
+      return `<tr style="${isSaved ? 'opacity:0.6;' : ''}border-left:3px solid ${statusColor(t.status)};">
+        <td>
+          <div class="cell-name">${t.name || '—'}</div>
+          <div class="cell-hotel">${partnerName(t)}</div>
+        </td>
+        <td>${dirLabel(t)}</td>
+        <td>
+          <div>${fmtDate(t.date)}</div>
+          <div class="cell-sub">${fmtTime(t.time)}</div>
+        </td>
+        <td>${t.price ? '€' + parseFloat(t.price).toFixed(2) : '—'}</td>
+        <td>
+          <select class="inline-select" id="id-driver-${t.id}" onchange="onAssignChange('${t.id}')" style="min-width:130px;">
+            <option value="">— motorista —</option>
+            ${driverOpts}
+          </select>
+        </td>
+        <td>
+          <select class="inline-select" id="id-vehicle-${t.id}" onchange="onAssignChange('${t.id}')" style="min-width:130px;">
+            <option value="">— viatura —</option>
+            ${vehicleOpts}
+          </select>
+        </td>
+        <td>
+          <button class="btn-save" id="id-save-${t.id}" onclick="saveAssignment('${t.id}')" ${t.driver && t.vehicle ? '' : ''}>${isSaved ? '✓' : 'Guardar'}</button>
+        </td>
+      </tr>`;
+    }).join('');
+  } else {
+    // Reset header to original columns
+    const headerRow = document.querySelector('.transfers-table thead tr');
+    headerRow.innerHTML = '<th>Cliente / Parceiro</th><th>Percurso</th><th>Veículo</th><th>Data & Hora</th>';
+
+    tbody.innerHTML = list.map(t => {
+      const border = statusColor(t.status);
+      return `<tr class="service-row" style="cursor:pointer;border-left:3px solid ${border};" onclick="openViewServiceModal('${t.id}')">
+        <td>
+          <div class="cell-name">${t.name || '—'}</div>
+          <div class="cell-hotel">${partnerName(t)}</div>
+        </td>
+        <td>${dirLabel(t)}</td>
+        <td>${t.car_type === 'van' ? '🚐 Van' : '🚗 Sedan'}</td>
+        <td>
+          <div>${fmtDate(t.date)}</div>
+          <div class="cell-sub">${fmtTime(t.time)}</div>
+        </td>
+      </tr>`;
+    }).join('');
+  }
 }
 
 // ── SERVICE VIEW MODAL (read-only, calendar) ──────
@@ -2083,6 +2180,195 @@ async function removeVehicle(id) {
   await fetch(`${API}?type=vehicles`, { method: 'DELETE', body: JSON.stringify({ id }) });
   await loadAll();
   showToast('Removido ✓');
+}
+
+// ── IMPORT EXCEL ────────────────────────────────
+let importData = [];
+
+function openImportModal() {
+  const sel = document.getElementById('import-partner');
+  sel.innerHTML = '<option value="">— seleciona —</option>' +
+    partners.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+  document.getElementById('import-step-1').style.display = '';
+  document.getElementById('import-step-2').style.display = 'none';
+  document.getElementById('import-preview').style.display = 'none';
+  document.getElementById('import-confirm-btn').style.display = 'none';
+  document.getElementById('import-file-name').style.display = 'none';
+  document.getElementById('import-file-input').value = '';
+  importData = [];
+  document.getElementById('import-modal').style.display = 'flex';
+}
+
+function closeImportModal() {
+  document.getElementById('import-modal').style.display = 'none';
+  importData = [];
+}
+
+function onImportFileSelected() {
+  const file = document.getElementById('import-file-input').files[0];
+  if (!file) return;
+  document.getElementById('import-file-name').textContent = '📄 ' + file.name;
+  document.getElementById('import-file-name').style.display = '';
+  document.getElementById('import-preview').style.display = 'none';
+  document.getElementById('import-confirm-btn').style.display = 'none';
+  importData = [];
+  previewImport();
+}
+
+async function previewImport() {
+  const file = document.getElementById('import-file-input').files[0];
+  if (!file) return;
+  const partnerId = document.getElementById('import-partner').value;
+  if (!partnerId) { showToast('Seleciona o parceiro'); return; }
+  const partner = partners.find(p => String(p.id) === String(partnerId));
+  if (!partner) return;
+
+  try {
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, { type: 'array' });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
+
+    if (rows.length < 2) { showToast('Ficheiro sem dados'); return; }
+
+    const header = rows[0];
+    // Map columns by position: A=0, B=1, ...
+    // BookingId=0, PickupDate=1, PickupTime=2, CustomerName=3, CustomerPhone=4,
+    // PickupAddress=5, FlightNumber=6, DestinationAddress=7, Driver=8, Motorista=9,
+    // Vehicle=10, JourneyDistance=11, Seats=12, VehicleType=13, PrecoParceiro=14
+    const dataRows = rows.slice(1).filter(r => r[0] && r[3]); // skip empty rows
+    importData = dataRows.map(r => {
+      const pickup = String(r[5] || '').trim();
+      const dest = String(r[7] || '').trim();
+      const isPickupAirport = pickup.toUpperCase().includes('AIRPORT') || pickup.toUpperCase().includes('LIS');
+      const isDestAirport = dest.toUpperCase().includes('AIRPORT') || dest.toUpperCase().includes('LIS');
+      let dir = 'custom';
+      if (!isPickupAirport && isDestAirport) dir = 'h2a';
+      else if (isPickupAirport && !isDestAirport) dir = 'a2h';
+      const carType = String(r[13] || '').toLowerCase().includes('mini') ? 'van' : 'sedan';
+      let dateStr = '';
+      if (r[1]) {
+        if (r[1] instanceof Date) dateStr = r[1].toISOString().split('T')[0];
+        else if (typeof r[1] === 'number') dateStr = XLSX.SSF.format('yyyy-mm-dd', r[1]);
+        else dateStr = String(r[1]).split(' ')[0];
+      }
+      let timeStr = '';
+      if (r[2]) {
+        if (r[2] instanceof Date) timeStr = r[2].toTimeString().slice(0,5);
+        else if (typeof r[2] === 'number') {
+          const totalMin = Math.round(r[2] * 1440);
+          const h = Math.floor(totalMin / 60);
+          const m = totalMin % 60;
+          timeStr = String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
+        }
+        else timeStr = String(r[2]).slice(0,5);
+      }
+      return {
+        id: String(r[0]),
+        hotel: partner.name,
+        partner_id: String(partnerId),
+        date: dateStr,
+        time: timeStr,
+        name: String(r[3] || '').trim(),
+        phone: String(r[4] || '').trim(),
+        origin: dir === 'custom' ? pickup : (dir === 'h2a' ? pickup : ''),
+        destination: dir === 'custom' ? dest : (dir === 'a2h' ? dest : ''),
+        dir,
+        adults: String(r[12] || '1'),
+        car_type: carType,
+        price: String(r[14] || ''),
+        flight: String(r[6] || '').trim(),
+        service_type: 'transfer',
+        status: 'pendente',
+        driver: '',
+        vehicle: '',
+      };
+    });
+
+    // Check for duplicates by Booking Id
+    const existingIds = new Set(transfers.map(t => String(t.id)));
+    const dupes = importData.filter(d => existingIds.has(d.id));
+    const newOnes = importData.filter(d => !existingIds.has(d.id));
+
+    document.getElementById('import-preview-count').textContent =
+      `📥 ${newOnes.length} serviços por importar`;
+    document.getElementById('import-preview-dupes').textContent =
+      dupes.length ? `⚠️ ${dupes.length} já existem (Booking ID duplicado) — vão ser ignorados` : '';
+    document.getElementById('import-preview').style.display = '';
+    document.getElementById('import-confirm-btn').style.display = newOnes.length ? '' : 'none';
+    importData = newOnes;
+  } catch (e) {
+    showToast('Erro ao ler ficheiro: ' + e.message);
+    console.error(e);
+  }
+}
+
+async function confirmImport() {
+  if (!importData.length) return;
+  const btn = document.getElementById('import-confirm-btn');
+  btn.disabled = true;
+  btn.textContent = 'A importar…';
+
+  try {
+    const res = await fetch(`${API}?type=transfers`, {
+      method: 'POST',
+      body: JSON.stringify({ transfers: importData }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Erro no servidor');
+
+    const count = data.imported || 0;
+    document.getElementById('import-step-1').style.display = 'none';
+    document.getElementById('import-step-2').style.display = '';
+    document.getElementById('import-result-icon').textContent = '✅';
+    document.getElementById('import-result-text').textContent =
+      `${count} serviços importados com sucesso!`;
+    document.getElementById('import-result-sub').textContent =
+      'Aparecem na lista de Pendentes — associa motorista e viatura para confirmar.';
+
+    importData = [];
+    await loadAll();
+    // Switch to pendentes filter
+    setFilter('pendente', document.querySelector('#filters .filter-btn'));
+  } catch (e) {
+    showToast('Erro: ' + e.message);
+    btn.disabled = false;
+    btn.textContent = 'Importar';
+  }
+}
+
+// ── INLINE ASSIGNMENT (pendentes table) ─────────
+function onAssignChange(id) {
+  const btn = document.getElementById('id-save-' + id);
+  btn.textContent = 'Guardar';
+  btn.disabled = false;
+}
+
+async function saveAssignment(id) {
+  const driver = document.getElementById('id-driver-' + id).value;
+  const vehicle = document.getElementById('id-vehicle-' + id).value;
+  if (!driver || !vehicle) { showToast('Seleciona motorista e viatura'); return; }
+
+  const btn = document.getElementById('id-save-' + id);
+  btn.disabled = true;
+  btn.textContent = 'A guardar…';
+
+  try {
+    const res = await fetch(`${API}?type=transfers`, {
+      method: 'PUT',
+      body: JSON.stringify({ id, driver, vehicle, status: 'confirmado' }),
+    });
+    if (!res.ok) throw new Error('Erro ao guardar');
+
+    btn.textContent = '✓';
+    btn.disabled = true;
+    await loadAll();
+    showToast('Serviço confirmado ✓');
+  } catch (e) {
+    showToast('Erro: ' + e.message);
+    btn.disabled = false;
+    btn.textContent = 'Guardar';
+  }
 }
 
 // ── INIT ──────────────────────────────────────────
