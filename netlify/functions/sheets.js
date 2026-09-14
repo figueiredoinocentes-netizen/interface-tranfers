@@ -88,7 +88,7 @@ const SHEETS = {
   transfers: { name: 'Transfers', headers: ['id','hotel','dir','name','adults','children','luggage','child_seat','payment','date','time','flight','arrival','notes','status','driver','vehicle','car_type','partner_id','created_at','child_ages','phone','price','origin','destination','service_type','driver_payout','tour_arrival','dropoff'] },
   drivers:   { name: 'Motoristas', headers: ['id','name','phone','active'] },
   vehicles:  { name: 'Viaturas',   headers: ['id','name','active'] },
-  partners:  { name: 'Parceiros',  headers: ['id','slug','name'] },
+  partners:  { name: 'Parceiros',  headers: ['id','slug','name','premium'] },
   // one row per partner; 'id' holds the partner's id (1:1 relationship)
   pricing:   { name: 'Precos', headers: ['id','price_h2a_sedan','price_h2a_van','price_a2h_sedan','price_a2h_van','commission_percent'] },
   subscriptions: { name: 'Subscricoes', headers: ['id','endpoint','p256dh','auth'] },

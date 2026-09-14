@@ -370,6 +370,7 @@
         <button class="filter-btn" onclick="setFilter('confirmado', this)">Confirmados</button>
         <button class="filter-btn" onclick="setFilter('concluido', this)">Concluídos</button>
         <button class="filter-btn" onclick="setFilter('cancelado', this)">Cancelados</button>
+        <button class="filter-btn" id="premium-filter-btn" onclick="setPremiumFilter(this)" style="border-color:var(--gold);color:var(--gold);">⭐ Premium</button>
       </div>
       <select class="add-input" id="servicos-partner-filter" onchange="setServicosPartnerFilter(this.value)" style="min-width:180px;">
         <option value="todos">Todos os parceiros</option>
@@ -1056,6 +1057,7 @@
 
 let transfers = [], drivers = [], vehicles = [], partners = [], pricing = [], currentFilter = 'pendente';
 let servicosPartnerFilter = 'todos';
+let premiumFilter = false;
 const BASE_URL = 'https://vianta-transfers.netlify.app';
 
 function fmtDate(d) {
@@ -1072,6 +1074,14 @@ function partnerName(t) {
     if (p) return p.name;
   }
   return t.hotel || '—';
+}
+function isPremiumService(t) {
+  if (!t.partner_id) return false;
+  const p = partners.find(x => String(x.id) === String(t.partner_id));
+  return p && String(p.premium) === '1';
+}
+function premiumBadge(t) {
+  return isPremiumService(t) ? '<span style="display:inline-flex;align-items:center;gap:3px;"><span style="color:#D4AF37;font-size:12px;">⭐</span><span style="font-size:10px;color:#D4AF37;font-weight:500;background:rgba(212,175,55,0.12);padding:1px 6px;border-radius:4px;">PREMIUM</span></span>' : '';
 }
 function dirLabel(t) {
   if (t.service_type === 'tour') return '<span class="dir-badge dir-tour">🗺️ ' + (t.origin||'—') + ' → ' + (t.destination||'—') + ' → ' + (t.dropoff||'—') + '</span>';
@@ -1159,6 +1169,12 @@ function renderCalendar() {
 }
 
 // ── FILTER ───────────────────────────────────────
+function setPremiumFilter(btn) {
+  premiumFilter = !premiumFilter;
+  btn.classList.toggle('active', premiumFilter);
+  btn.textContent = premiumFilter ? '⭐ Premium' : '⭐ Premium';
+  renderTransfers();
+}
 function setServicosPartnerFilter(v) {
   servicosPartnerFilter = v;
   renderTransfers();
@@ -1595,6 +1611,10 @@ function renderTransfers() {
   const tbody = document.getElementById('transfers-tbody');
   let list = currentFilter === 'todos' ? transfers : transfers.filter(t => t.status === currentFilter);
   if (servicosPartnerFilter !== 'todos') list = list.filter(t => String(t.partner_id) === String(servicosPartnerFilter));
+  if (premiumFilter) list = list.filter(t => {
+    const p = partners.find(x => String(x.id) === String(t.partner_id));
+    return p && String(p.premium) === '1';
+  });
   list = [...list].sort((a, b) => `${b.date} ${b.time}`.localeCompare(`${a.date} ${a.time}`));
 
   if (!list.length) {
@@ -1612,10 +1632,10 @@ function renderTransfers() {
       const driverOpts = drivers.map(d => `<option value="${d.id}" ${String(t.driver) === String(d.id) ? 'selected' : ''}>${d.name}</option>`).join('');
       const vehicleOpts = vehicles.map(v => `<option value="${v.id}" ${String(t.vehicle) === String(v.id) ? 'selected' : ''}>${v.name}</option>`).join('');
       const isSaved = t.driver && t.vehicle;
-      return `<tr style="${isSaved ? 'opacity:0.6;' : ''}border-left:3px solid ${statusColor(t.status)};">
+      return `<tr style="${isSaved ? 'opacity:0.6;' : ''}border-left:3px solid ${statusColor(t.status)};${isPremiumService(t) ? 'background:rgba(212,175,55,0.04);' : ''}">
         <td>
           <div class="cell-name">${t.name || '—'}</div>
-          <div class="cell-hotel">${partnerName(t)}</div>
+          <div class="cell-hotel">${partnerName(t)} ${premiumBadge(t)}</div>
         </td>
         <td>${dirLabel(t)}</td>
         <td>
@@ -1648,10 +1668,10 @@ function renderTransfers() {
 
     tbody.innerHTML = list.map(t => {
       const border = statusColor(t.status);
-      return `<tr class="service-row" style="cursor:pointer;border-left:3px solid ${border};" onclick="openViewServiceModal('${t.id}')">
+      return `<tr class="service-row" style="cursor:pointer;border-left:3px solid ${border};${isPremiumService(t) ? 'background:rgba(212,175,55,0.04);' : ''}" onclick="openViewServiceModal('${t.id}')">
         <td>
           <div class="cell-name">${t.name || '—'}</div>
-          <div class="cell-hotel">${partnerName(t)}</div>
+          <div class="cell-hotel">${partnerName(t)} ${premiumBadge(t)}</div>
         </td>
         <td>${dirLabel(t)}</td>
         <td>${t.car_type === 'van' ? '🚐 Van' : '🚗 Sedan'}</td>
@@ -2420,10 +2440,10 @@ function renderBatchAssign(items) {
     const driverOpts = drivers.map(d => `<option value="${d.id}" ${String(t.driver) === String(d.id) ? 'selected' : ''}>${d.name}</option>`).join('');
     const vehicleOpts = vehicles.map(v => `<option value="${v.id}" ${String(t.vehicle) === String(v.id) ? 'selected' : ''}>${v.name}</option>`).join('');
     const isSaved = t.driver && t.vehicle;
-    return `<tr style="${isSaved ? 'opacity:0.6;' : ''}border-left:3px solid ${statusColor(t.status)};">
+    return `<tr style="${isSaved ? 'opacity:0.6;' : ''}border-left:3px solid ${statusColor(t.status)};${isPremiumService(t) ? 'background:rgba(212,175,55,0.04);' : ''}">
       <td>
         <div class="cell-name">${t.name || '—'}</div>
-        <div class="cell-hotel">${partnerName(t)}</div>
+        <div class="cell-hotel">${partnerName(t)} ${premiumBadge(t)}</div>
       </td>
       <td>${dirLabel(t)}</td>
       <td>
