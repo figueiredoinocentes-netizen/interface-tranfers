@@ -107,6 +107,7 @@
   }
   .badge-pendente { background: var(--warning-bg); color: var(--warning-text); }
   .badge-confirmado { background: var(--success-bg); color: var(--success-text); }
+  .badge-por-faturar { background: #E8E0F0; color: #5B3A8A; }
   .badge-cancelado { background: var(--danger-bg); color: var(--danger-text); }
   .badge-concluido { background: var(--surface2); color: var(--muted); }
 
@@ -147,6 +148,7 @@
   }
   .status-select.pendente { background: var(--warning-bg); color: var(--warning-text); }
   .status-select.confirmado { background: var(--success-bg); color: var(--success-text); }
+  .status-select.por-faturar { background: #E8E0F0; color: #5B3A8A; }
   .status-select.cancelado { background: var(--danger-bg); color: var(--danger-text); }
   .status-select.concluido { background: var(--surface2); color: var(--muted); }
 
@@ -368,6 +370,7 @@
         <button class="filter-btn active" onclick="setFilter('pendente', this)">Pendentes</button>
         <button class="filter-btn" onclick="setFilter('todos', this)">Todos</button>
         <button class="filter-btn" onclick="setFilter('confirmado', this)">Confirmados</button>
+        <button class="filter-btn" onclick="setFilter('por-faturar', this)">Por Faturar</button>
         <button class="filter-btn" onclick="setFilter('concluido', this)">Concluídos</button>
         <button class="filter-btn" onclick="setFilter('cancelado', this)">Cancelados</button>
         <button class="filter-btn" id="premium-filter-btn" onclick="setPremiumFilter(this)" style="border-color:var(--gold);color:var(--gold);">⭐ Premium</button>
@@ -982,6 +985,7 @@
         <select class="add-input" id="sm-status" style="width:100%;">
           <option value="pendente">Pendente</option>
           <option value="confirmado">Confirmado</option>
+          <option value="por-faturar">Por Faturar</option>
           <option value="concluido">Concluído</option>
           <option value="cancelado">Cancelado</option>
         </select>
@@ -1119,12 +1123,14 @@ function calNext() { calMonth++; if (calMonth > 11) { calMonth = 0; calYear++; }
 
 function statusColor(s) {
   if (s === 'confirmado' || s === 'enviado') return '#3B6D11';
+  if (s === 'por-faturar') return '#5B6ABF';
   if (s === 'cancelado') return '#991B1B';
   if (s === 'concluido') return '#888070';
   return '#8A5A10'; // pendente / novo
 }
 function statusLabel(s) {
   if (s === 'confirmado' || s === 'enviado') return 'Confirmado';
+  if (s === 'por-faturar') return 'Por Faturar';
   if (s === 'cancelado') return 'Cancelado';
   if (s === 'concluido') return 'Concluído';
   return 'Pendente';
