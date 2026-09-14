@@ -2390,13 +2390,14 @@ async function saveBatchAssign() {
   btn.textContent = 'A guardar…';
   let saved = 0;
   for (const id of batchAssignIds) {
-    const driver = document.getElementById('id-driver-' + id);
-    const vehicle = document.getElementById('id-vehicle-' + id);
+    const driver = document.getElementById('bd-driver-' + id);
+    const vehicle = document.getElementById('bd-vehicle-' + id);
+    const driver_payout = document.getElementById('bd-payout-' + id)?.value || '';
     if (driver && vehicle && driver.value && vehicle.value) {
       try {
         const res = await fetch(`${API}?type=transfers`, {
           method: 'PUT',
-          body: JSON.stringify({ id, driver: driver.value, vehicle: vehicle.value, driver_payout: document.getElementById('bd-payout-' + id)?.value || '', status: 'confirmado' }),
+          body: JSON.stringify({ id, driver: driver.value, vehicle: vehicle.value, driver_payout, status: 'confirmado' }),
         });
         if (res.ok) saved++;
       } catch (_) {}
