@@ -477,6 +477,10 @@
         <input class="add-input" id="new-partner-name" placeholder="Nome do hotel" style="flex:1;" />
         <button class="btn-add" onclick="addPartner()">Adicionar</button>
       </div>
+      <div style="display:flex;align-items:center;gap:6px;margin-top:8px;">
+        <input type="checkbox" id="new-partner-premium" checked style="accent-color:var(--gold);width:16px;height:16px;cursor:pointer;" />
+        <label for="new-partner-premium" style="font-size:13px;cursor:pointer;">Parceiro ⭐ premium</label>
+      </div>
     </div>
 
   </div>
@@ -1011,6 +1015,9 @@
       <label>Nome do parceiro</label>
       <input class="add-input" id="pm-name" style="width:100%;" />
     </div>
+    <div style="display:flex;align-items:center;gap:6px;margin-top:10px;">
+      <input type="checkbox" id="pm-premium" style="accent-color:var(--gold);width:16px;height:16px;cursor:pointer;" />
+      <label for="pm-premium" style="font-size:13px;cursor:pointer;">Parceiro ⭐ premium</label>
 
     <div style="font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin:20px 0 10px;">Preços dos serviços (€)</div>
     <div class="form-grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
@@ -1302,6 +1309,7 @@ function openPartnerModal(id) {
   const pr = pricing.find(x => String(x.id) === String(id)) || {};
 
   document.getElementById('pm-name').value = p.name;
+  document.getElementById('pm-premium').checked = String(p.premium) === '1';
   document.getElementById('pm-price-h2a-sedan').value = pr.price_h2a_sedan || '';
   document.getElementById('pm-price-h2a-van').value = pr.price_h2a_van || '';
   document.getElementById('pm-price-a2h-sedan').value = pr.price_a2h_sedan || '';
@@ -1336,7 +1344,7 @@ async function savePartnerModal() {
     commission_percent: document.getElementById('pm-commission').value,
   };
 
-  await fetch(`${API}?type=partners`, { method: 'PUT', body: JSON.stringify({ id, name }) });
+  await fetch(`${API}?type=partners`, { method: 'PUT', body: JSON.stringify({ id, name, premium: document.getElementById('pm-premium').checked ? '1' : '0' }) });
 
   const existingPricing = pricing.find(x => String(x.id) === String(id));
   const priceRes = await fetch(`${API}?type=pricing`, { method: existingPricing ? 'PUT' : 'POST', body: JSON.stringify(priceBody) });
@@ -1372,10 +1380,11 @@ async function addPartner() {
   if (!name) { showToast('Preenche o nome do hotel'); return; }
   const slug = name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9\s-]/g, '').trim().replace(/\s+/g, '-');
   if (partners.some(p => p.slug === slug)) { showToast('Este parceiro já existe'); return; }
-  const res = await fetch(`${API}?type=partners`, { method: 'POST', body: JSON.stringify({ name, slug }) });
+  const res = await fetch(`${API}?type=partners`, { method: 'POST', body: JSON.stringify({ name, slug, premium: document.getElementById('new-partner-premium').checked ? '1' : '0' }) });
   if (!res.ok) { showToast('Erro ao adicionar'); return; }
   document.getElementById('new-partner-name').value = '';
   document.getElementById('new-partner-slug').value = '';
+  document.getElementById('new-partner-premium').checked = true;
   await loadAll();
   showToast('Parceiro adicionado ✓');
 }

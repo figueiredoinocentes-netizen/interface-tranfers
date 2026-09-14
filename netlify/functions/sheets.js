@@ -221,7 +221,7 @@ exports.handler = async (event) => {
       } else if (type === 'vehicles') {
         newRow = [newId, body.name || '', 'true'];
       } else if (type === 'partners') {
-        newRow = [newId, body.slug || '', body.name || ''];
+        newRow = [newId, body.slug || '', body.name || '', body.premium !== undefined ? body.premium : '1'];
       } else if (type === 'pricing') {
         newRow = [newId, body.price_h2a_sedan || '', body.price_h2a_van || '', body.price_a2h_sedan || '', body.price_a2h_van || '', body.commission_percent || ''];
       } else if (type === 'subscriptions') {
@@ -257,7 +257,7 @@ exports.handler = async (event) => {
         : type === 'pricing'
         ? ['price_h2a_sedan','price_h2a_van','price_a2h_sedan','price_a2h_van','commission_percent']
         : type === 'partners'
-        ? ['name']
+        ? ['name', 'premium']
         : ['name','phone','active'];
 
       const updates = [];
