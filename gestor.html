@@ -595,7 +595,7 @@
     <div class="table-wrap">
       <table class="transfers-table">
         <thead>
-          <tr><th>Cliente</th><th>Percurso</th><th>Data & Hora</th><th>Preço</th><th>Motorista</th><th>Viatura</th><th></th></tr>
+          <tr><th>Cliente</th><th>Percurso</th><th>Data & Hora</th><th>Preço</th><th>Motorista recebe</th><th>Motorista</th><th>Viatura</th><th></th></tr>
         </thead>
         <tbody id="batch-tbody"></tbody>
       </table>
@@ -1605,7 +1605,7 @@ function renderTransfers() {
   // Pendentes get inline driver/vehicle dropdowns
   if (currentFilter === 'pendente') {
     const headerRow = document.querySelector('.transfers-table thead tr');
-    headerRow.innerHTML = '<th>Cliente / Parceiro</th><th>Percurso</th><th>Data & Hora</th><th>Preço</th><th>Motorista</th><th>Viatura</th><th></th>';
+    headerRow.innerHTML = '<th>Cliente / Parceiro</th><th>Percurso</th><th>Data & Hora</th><th>Preço</th><th>Motorista recebe</th><th>Motorista</th><th>Viatura</th><th></th>';
     headerRow.querySelectorAll('th').forEach(th => th.style.cssText = '');
 
     tbody.innerHTML = list.map(t => {
@@ -1623,9 +1623,10 @@ function renderTransfers() {
           <div class="cell-sub">${fmtTime(t.time)}</div>
         </td>
         <td>${t.price ? '€' + parseFloat(t.price).toFixed(2) : '—'}</td>
-        <td>
-          <select class="inline-select" id="id-driver-${t.id}" onchange="onAssignChange('${t.id}')" style="min-width:130px;">
-            <option value="">— motorista —</option>
+      <td><input class="inline-input" type="number" min="0" step="0.01" id="id-payout-${t.id}" value="${t.driver_payout || ''}" placeholder="0.00" onchange="onAssignChange('${t.id}')" style="width:80px;padding:4px 6px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-family:inherit;font-size:13px;text-align:center;" /></td>
+      <td>
+        <select class="inline-select" id="id-driver-${t.id}" onchange="onAssignChange('${t.id}')" style="min-width:130px;">
+          <option value="">— motorista —</option>
             ${driverOpts}
           </select>
         </td>
@@ -2395,7 +2396,7 @@ async function saveBatchAssign() {
       try {
         const res = await fetch(`${API}?type=transfers`, {
           method: 'PUT',
-          body: JSON.stringify({ id, driver: driver.value, vehicle: vehicle.value, status: 'confirmado' }),
+          body: JSON.stringify({ id, driver: driver.value, vehicle: vehicle.value, driver_payout: document.getElementById('bd-payout-' + id)?.value || '', status: 'confirmado' }),
         });
         if (res.ok) saved++;
       } catch (_) {}
@@ -2429,6 +2430,7 @@ function renderBatchAssign(items) {
         <div class="cell-sub">${fmtTime(t.time)}</div>
       </td>
       <td>${t.price ? '€' + parseFloat(t.price).toFixed(2) : '—'}</td>
+      <td><input class="inline-input" type="number" min="0" step="0.01" id="bd-payout-${t.id}" value="${t.driver_payout || ''}" placeholder="0.00" onchange="onBatchChange('${t.id}')" style="width:80px;padding:4px 6px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-family:inherit;font-size:13px;text-align:center;" /></td>
       <td>
         <select class="inline-select" id="bd-driver-${t.id}" onchange="onBatchChange('${t.id}')" style="min-width:130px;">
           <option value="">— motorista —</option>
@@ -2457,6 +2459,7 @@ function onBatchChange(id) {
 async function saveBatchAssignment(id) {
   const driver = document.getElementById('bd-driver-' + id).value;
   const vehicle = document.getElementById('bd-vehicle-' + id).value;
+  const driver_payout = document.getElementById('bd-payout-' + id).value;
   if (!driver || !vehicle) { showToast('Seleciona motorista e viatura'); return; }
 
   const btn = document.getElementById('bd-save-' + id);
@@ -2466,7 +2469,7 @@ async function saveBatchAssignment(id) {
   try {
     const res = await fetch(`${API}?type=transfers`, {
       method: 'PUT',
-      body: JSON.stringify({ id, driver, vehicle, status: 'confirmado' }),
+      body: JSON.stringify({ id, driver, vehicle, driver_payout, status: 'confirmado' }),
     });
     if (!res.ok) throw new Error('Erro ao guardar');
 
@@ -2494,6 +2497,7 @@ function onAssignChange(id) {
 async function saveAssignment(id) {
   const driver = document.getElementById('id-driver-' + id).value;
   const vehicle = document.getElementById('id-vehicle-' + id).value;
+  const driver_payout = document.getElementById('id-payout-' + id).value;
   if (!driver || !vehicle) { showToast('Seleciona motorista e viatura'); return; }
 
   const btn = document.getElementById('id-save-' + id);
@@ -2503,7 +2507,7 @@ async function saveAssignment(id) {
   try {
     const res = await fetch(`${API}?type=transfers`, {
       method: 'PUT',
-      body: JSON.stringify({ id, driver, vehicle, status: 'confirmado' }),
+      body: JSON.stringify({ id, driver, vehicle, driver_payout, status: 'confirmado' }),
     });
     if (!res.ok) throw new Error('Erro ao guardar');
 
