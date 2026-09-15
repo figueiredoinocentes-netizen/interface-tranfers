@@ -94,6 +94,19 @@ const SHEETS = {
   subscriptions: { name: 'Subscricoes', headers: ['id','endpoint','p256dh','auth'] },
 };
 
+// Fleet writes to DB Carros (different sheet)
+const FLEET_SHEET_ID = '1j5RCxSjd24QlPaquRX7C7eeiHrzPo1c6Wsb0OQWFRjQ';
+const FLEET_SHEET = 'CARROS';
+const FLEET_COLUMNS = {
+  '#': 'A', Chave: 'B', Matrícula: 'C', 'Marca/Modelo': 'D', Versão: 'E', Ano: 'F',
+  Combustível: 'G', 'KMs Atuais': 'H', Cor: 'I', Caixa: 'J', 'Autonomia (km)': 'K',
+  'Categorias TVDE': 'L', Proprietário: 'M', 'Tipo Gestão': 'N', Estado: 'O',
+  'Data Entrada': 'P', 'Data Saída': 'Q', 'Custo Aquisição (c/IVA)': 'R',
+  'Custo Aquisição (s/IVA)': 'S', 'Despesas (€)': 'T', 'Preço Venda (€)': 'U',
+  'Valor Aluguer (semanal)': 'V', 'Caução (€)': 'W', 'Margem Realizada (€)': 'X',
+  'Motorista Atual': 'Y', Garantia: 'Z',
+};
+
 function getAuth() {
   const creds = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT);
   return new google.auth.GoogleAuth({ credentials: creds, scopes: ['https://www.googleapis.com/auth/spreadsheets'] });
@@ -148,14 +161,33 @@ exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 200, headers: cors(), body: '' };
 
   const params = event.queryStringParameters || {};
-  const type = params.type; // transfers | drivers | vehicles
-  if (!SHEETS[type]) return err('Invalid type', 400);
+  const type = params.type; // transfers | drivers | vehicles | fleet
+  if (!SHEETS[type] && type !== 'fleet') return err('Invalid type', 400);
 
   let body = {};
   try { if (event.body) body = JSON.parse(event.body); } catch (_) {}
 
   try {
     const sheets = await getSheetsClient();
+
+    // Fleet type uses its own sheet — handle before ensureSheet/cfg
+    if (type === 'fleet') {
+      if (event.httpMethod === 'PUT') {
+        const { row, column, value } = body;
+        if (!row || !column) return err('row and column required', 400);
+        const colLetter = FLEET_COLUMNS[column];
+        if (!colLetter) return err('Unknown column: ' + column, 400);
+        await sheets.spreadsheets.values.update({
+          spreadsheetId: FLEET_SHEET_ID,
+          range: FLEET_SHEET + '!' + colLetter + row,
+          valueInputOption: 'RAW',
+          requestBody: { values: [[value]] },
+        });
+        return ok({ ok: true });
+      }
+      return err('Method not allowed', 405);
+    }
+
     await ensureSheet(sheets, type);
     const cfg = SHEETS[type];
 
