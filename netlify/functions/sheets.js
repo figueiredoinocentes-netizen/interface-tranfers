@@ -97,6 +97,11 @@ const SHEETS = {
 // Fleet writes to DB Carros (different sheet)
 const FLEET_SHEET_ID = '1j5RCxSjd24QlPaquRX7C7eeiHrzPo1c6Wsb0OQWFRjQ';
 const FLEET_SHEET = 'CARROS';
+
+// Armazém inventory — separate sheet
+const ARMAZEM_SHEET_ID = '1oEKDArSrjfpf8xvpWSJVKcCcTfyZKKz5b5AB8Mh8-u8';
+const ARMAZEM_SHEET = 'INVENTARIO';
+const ARMAZEM_HEADERS = ['Item', 'Categoria', 'Stock Atual', 'Stock Mínimo', 'Unidade', 'Fornecedor', 'Última Compra', 'Obs'];
 const FLEET_COLUMNS = {
   '#': 'A', Chave: 'B', Matrícula: 'C', 'Marca/Modelo': 'D', Versão: 'E', Ano: 'F',
   Combustível: 'G', 'KMs Atuais': 'H', Cor: 'I', Caixa: 'J', 'Autonomia (km)': 'K',
@@ -161,8 +166,8 @@ exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 200, headers: cors(), body: '' };
 
   const params = event.queryStringParameters || {};
-  const type = params.type; // transfers | drivers | vehicles | fleet
-  if (!SHEETS[type] && type !== 'fleet') return err('Invalid type', 400);
+  const type = params.type; // transfers | drivers | vehicles | fleet | armazem
+  if (!SHEETS[type] && type !== 'fleet' && type !== 'armazem') return err('Invalid type', 400);
 
   let body = {};
   try { if (event.body) body = JSON.parse(event.body); } catch (_) {}
@@ -180,6 +185,34 @@ exports.handler = async (event) => {
         await sheets.spreadsheets.values.update({
           spreadsheetId: FLEET_SHEET_ID,
           range: FLEET_SHEET + '!' + colLetter + row,
+          valueInputOption: 'RAW',
+          requestBody: { values: [[value]] },
+        });
+        return ok({ ok: true });
+      }
+      return err('Method not allowed', 405);
+    }
+
+    // Armazém type — inventory management
+    if (type === 'armazem') {
+      if (event.httpMethod === 'GET') {
+        const res = await sheets.spreadsheets.values.get({
+          spreadsheetId: ARMAZEM_SHEET_ID,
+          range: ARMAZEM_SHEET + '!A1:Z100',
+        });
+        const vals = res.data.values || [];
+        const h = vals[0] || ARMAZEM_HEADERS;
+        const rows = vals.slice(1).map(row => Object.fromEntries(h.map((col, i) => [col, row[i] ?? ''])));
+        return ok(rows);
+      }
+      if (event.httpMethod === 'PUT') {
+        const { row, column, value } = body;
+        if (!row || !column) return err('row and column required', 400);
+        const colLetter = String.fromCharCode(65 + ARMAZEM_HEADERS.indexOf(column));
+        if (!colLetter || colLetter < 'A' || colLetter > 'Z') return err('Unknown column: ' + column, 400);
+        await sheets.spreadsheets.values.update({
+          spreadsheetId: ARMAZEM_SHEET_ID,
+          range: ARMAZEM_SHEET + '!' + colLetter + row,
           valueInputOption: 'RAW',
           requestBody: { values: [[value]] },
         });
