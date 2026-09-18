@@ -84,6 +84,36 @@ async function sendTransferEmail(data, id) {
   });
 }
 
+async function sendTicketEmail(data, id) {
+  const apiKey = process.env.RESEND_API_KEY;
+  const to = process.env.MANAGER_EMAIL;
+  if (!apiKey || !to) return;
+
+  const priorityLabel = { baixa: '🟢 Baixa', normal: '🔵 Normal', alta: '🟠 Alta', urgente: '🔴 Urgente' };
+  const lines = [
+    `<b>Novo ticket #${id}</b>`,
+    ``,
+    `<b>Assunto:</b> ${data.subject || '—'}`,
+    `<b>Prioridade:</b> ${priorityLabel[data.priority] || data.priority || '—'}`,
+    `<b>Parceiro:</b> ${data.partner_name || '—'}`,
+    `<b>Descrição:</b>`,
+    `<pre style="background:#f5f5f5;padding:12px;border-radius:6px;font-size:13px;line-height:1.5;white-space:pre-wrap">${data.description || '—'}</pre>`,
+    ``,
+    `<a href="https://vianta-transfers.netlify.app/gestor.html">Abrir gestor →</a>`,
+  ].filter(l => l !== null).join('<br>');
+
+  await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      from: 'Vianta Transfers <onboarding@resend.dev>',
+      to: [to],
+      subject: `🎫 Ticket #${id}: ${data.subject || '(sem assunto)'}`,
+      html: `<div style="font-family:sans-serif;font-size:14px;line-height:1.6">${lines}</div>`,
+    }),
+  });
+}
+
 const SHEETS = {
   transfers: { name: 'Transfers', headers: ['id','hotel','dir','name','adults','children','luggage','child_seat','payment','date','time','flight','arrival','notes','status','driver','vehicle','car_type','partner_id','created_at','child_ages','phone','price','origin','destination','service_type','driver_payout','tour_arrival','dropoff'] },
   drivers:   { name: 'Motoristas', headers: ['id','name','phone','active'] },
@@ -92,6 +122,7 @@ const SHEETS = {
   // one row per partner; 'id' holds the partner's id (1:1 relationship)
   pricing:   { name: 'Precos', headers: ['id','price_h2a_sedan','price_h2a_van','price_a2h_sedan','price_a2h_van','commission_percent'] },
   subscriptions: { name: 'Subscricoes', headers: ['id','endpoint','p256dh','auth'] },
+  tickets:    { name: 'Tickets', headers: ['id','subject','description','priority','status','partner_name','created_at','resolved_at'] },
 };
 
 // Fleet writes to DB Carros (different sheet)
@@ -291,6 +322,8 @@ exports.handler = async (event) => {
         newRow = [newId, body.price_h2a_sedan || '', body.price_h2a_van || '', body.price_a2h_sedan || '', body.price_a2h_van || '', body.commission_percent || ''];
       } else if (type === 'subscriptions') {
         newRow = [newId, body.endpoint || '', body.p256dh || '', body.auth || ''];
+      } else if (type === 'tickets') {
+        newRow = [newId, body.subject || '', body.description || '', body.priority || 'normal', 'novo', body.partner_name || '', new Date().toISOString(), ''];
       }
 
       await sheets.spreadsheets.values.append({
@@ -303,6 +336,9 @@ exports.handler = async (event) => {
       if (type === 'transfers') {
         await sendTransferEmail(body, newId).catch(e => console.error('Email error:', e));
         await sendPushNotifications(sheets, body).catch(e => console.error('Push error:', e));
+      }
+      if (type === 'tickets') {
+        await sendTicketEmail(body, newId).catch(e => console.error('Ticket email error:', e));
       }
 
       return ok({ ok: true, id: newId });
@@ -323,6 +359,8 @@ exports.handler = async (event) => {
         ? ['price_h2a_sedan','price_h2a_van','price_a2h_sedan','price_a2h_van','commission_percent']
         : type === 'partners'
         ? ['name', 'premium']
+        : type === 'tickets'
+        ? ['subject','description','priority','status','resolved_at','partner_name']
         : ['name','phone','active'];
 
       const updates = [];

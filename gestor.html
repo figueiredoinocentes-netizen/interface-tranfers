@@ -345,6 +345,7 @@
     <button class="tab" onclick="switchTab('equipa')">Motoristas & Viaturas</button>
     <button class="tab" onclick="switchTab('calendario')">Calendário</button>
     <button class="tab" onclick="switchTab('parceiros')">Parceiros</button>
+    <button class="tab" onclick="switchTab('tickets')">🎫 Tickets</button>
     <button class="tab" onclick="switchTab('dashboard')">Dashboard</button>
   </div>
 </div>
@@ -486,6 +487,78 @@
       </div>
     </div>
 
+  </div>
+</div>
+
+<!-- TICKETS -->
+<div id="page-tickets" class="page">
+  <div class="page-header" style="justify-content:space-between;">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div class="page-header-icon">🎫</div>
+      <div>
+        <div class="page-header-title">Tickets</div>
+        <div class="page-header-sub">Pedidos de alteração, bugs e melhorias</div>
+      </div>
+    </div>
+    <button class="btn-add" onclick="openTicketModal()">+ Novo Ticket</button>
+  </div>
+  <div class="container">
+    <div class="filters" id="ticket-filters">
+      <button class="filter-btn active" onclick="setTicketFilter('novo', this)">Novos</button>
+      <button class="filter-btn" onclick="setTicketFilter('todos', this)">Todos</button>
+      <button class="filter-btn" onclick="setTicketFilter('em analise', this)">Em Análise</button>
+      <button class="filter-btn" onclick="setTicketFilter('em desenvolvimento', this)">Em Desenvolvimento</button>
+      <button class="filter-btn" onclick="setTicketFilter('concluido', this)">Concluídos</button>
+    </div>
+    <div class="table-wrap">
+      <table class="transfers-table">
+        <thead>
+          <tr><th>#</th><th>Assunto</th><th>Parceiro</th><th>Prioridade</th><th>Estado</th><th>Data</th><th></th></tr>
+        </thead>
+        <tbody id="tickets-tbody">
+          <tr><td colspan="7" class="empty">A carregar…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- TICKET MODAL -->
+<div id="ticket-modal" onclick="if(event.target===this)closeTicketModal()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:100;align-items:center;justify-content:center;">
+  <div style="background:var(--bg);border-radius:var(--radius-lg);width:520px;max-width:92vw;max-height:90vh;overflow-y:auto;padding:24px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+      <div style="font-size:16px;font-weight:600;">Novo Ticket</div>
+      <button onclick="closeTicketModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted);line-height:1;">×</button>
+    </div>
+    <div class="svc-form">
+      <div class="form-group">
+        <label>Assunto <span class="req">*</span></label>
+        <input id="tkt-subject" placeholder="Ex: Erro no campo data do formulário" />
+      </div>
+      <div class="form-group" style="margin-top:12px;">
+        <label>Descrição <span class="req">*</span></label>
+        <textarea id="tkt-description" rows="4" placeholder="Descreve o pedido, problema ou alteração…"></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Prioridade</label>
+          <select id="tkt-priority">
+            <option value="baixa">🟢 Baixa</option>
+            <option value="normal" selected>🔵 Normal</option>
+            <option value="alta">🟠 Alta</option>
+            <option value="urgente">🔴 Urgente</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Parceiro / Origem</label>
+          <input id="tkt-partner" placeholder="Ex: ChoiceCar, Onyria, interno…" />
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:22px;">
+        <button onclick="closeTicketModal()" style="background:transparent;border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 16px;cursor:pointer;font-family:inherit;font-size:13px;">Cancelar</button>
+        <button class="btn-add" onclick="createTicket()">Criar Ticket</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1067,7 +1140,7 @@
 <script>
 // all data via Netlify Function → Google Sheets
 
-let transfers = [], drivers = [], vehicles = [], partners = [], pricing = [], currentFilter = 'pendente';
+let transfers = [], drivers = [], vehicles = [], partners = [], pricing = [], tickets = [], currentFilter = 'pendente';
 let servicosPartnerFilter = 'todos';
 let premiumFilter = false;
 const BASE_URL = 'https://vianta-transfers.netlify.app';
@@ -1104,11 +1177,12 @@ function dirLabel(t) {
 
 // ── TAB ──────────────────────────────────────────
 function switchTab(t) {
-  const order = ['servicos','equipa','calendario','parceiros','dashboard'];
+  const order = ['servicos','equipa','calendario','parceiros','tickets','dashboard'];
   document.querySelectorAll('.tab').forEach((b, i) => b.classList.toggle('active', order[i] === t));
   order.forEach(id => document.getElementById('page-' + id).classList.toggle('active', t === id));
   if (t === 'calendario') renderCalendar();
   if (t === 'dashboard') renderDashboard();
+  if (t === 'tickets') renderTickets();
 }
 
 // ── CALENDAR ─────────────────────────────────────
@@ -1270,18 +1344,20 @@ initPush();
 
 // ── LOAD ─────────────────────────────────────────
 async function loadAll() {
-  const [tr, dr, ve, pt, pr] = await Promise.all([
+  const [tr, dr, ve, pt, pr, tk] = await Promise.all([
     fetch(`${API}?type=transfers`).then(r => r.json()),
     fetch(`${API}?type=drivers`).then(r => r.json()),
     fetch(`${API}?type=vehicles`).then(r => r.json()),
     fetch(`${API}?type=partners`).then(r => r.json()),
     fetch(`${API}?type=pricing`).then(r => r.json()),
+    fetch(`${API}?type=tickets`).then(r => r.json()),
   ]);
   transfers = Array.isArray(tr) ? tr : [];
   drivers = Array.isArray(dr) ? dr : [];
   vehicles = Array.isArray(ve) ? ve : [];
   partners = Array.isArray(pt) ? pt : [];
   pricing = Array.isArray(pr) ? pr : [];
+  tickets = Array.isArray(tk) ? tk : [];
   populateServicosPartnerFilter();
   renderTransfers();
   renderDrivers();
@@ -2581,6 +2657,107 @@ async function saveAssignment(id) {
     btn.disabled = false;
     btn.textContent = 'Guardar';
   }
+}
+
+// ── TICKETS ──────────────────────────────────────────
+let ticketFilter = 'novo';
+
+function setTicketFilter(f, btn) {
+  ticketFilter = f;
+  document.querySelectorAll('#ticket-filters .filter-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderTickets();
+}
+
+function openTicketModal() {
+  document.getElementById('tkt-subject').value = '';
+  document.getElementById('tkt-description').value = '';
+  document.getElementById('tkt-priority').value = 'normal';
+  document.getElementById('tkt-partner').value = '';
+  document.getElementById('ticket-modal').style.display = 'flex';
+}
+
+function closeTicketModal() {
+  document.getElementById('ticket-modal').style.display = 'none';
+}
+
+async function createTicket() {
+  const subject = document.getElementById('tkt-subject').value.trim();
+  const description = document.getElementById('tkt-description').value.trim();
+  const priority = document.getElementById('tkt-priority').value;
+  const partner_name = document.getElementById('tkt-partner').value.trim();
+  if (!subject || !description) { showToast('Preenche o assunto e a descrição'); return; }
+
+  const btn = document.querySelector('#ticket-modal .btn-add');
+  btn.disabled = true;
+  btn.textContent = 'A criar…';
+
+  try {
+    const res = await fetch(`${API}?type=tickets`, {
+      method: 'POST',
+      body: JSON.stringify({ subject, description, priority, partner_name }),
+    });
+    if (!res.ok) throw new Error('Erro ao criar ticket');
+    closeTicketModal();
+    await loadAll();
+    showToast('Ticket criado ✓');
+  } catch (e) {
+    showToast('Erro: ' + e.message);
+  }
+  btn.disabled = false;
+  btn.textContent = 'Criar Ticket';
+}
+
+const PRIORITY_LABEL = { baixa: '🟢 Baixa', normal: '🔵 Normal', alta: '🟠 Alta', urgente: '🔴 Urgente' };
+const STATUS_BADGE = { 'novo': 'badge-pendente', 'em analise': 'badge-por-faturar', 'em desenvolvimento': 'badge-confirmado', 'concluido': 'badge-concluido', 'recusado': 'badge-cancelado' };
+
+function renderTickets() {
+  const tbody = document.getElementById('tickets-tbody');
+  let filtered = [...tickets];
+  if (ticketFilter !== 'todos') {
+    filtered = filtered.filter(t => t.status === ticketFilter);
+  }
+  // Sort newest first
+  filtered.sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
+
+  if (!filtered.length) {
+    tbody.innerHTML = `<tr><td colspan="7" class="empty">Nenhum ticket ${ticketFilter !== 'todos' ? 'com este estado' : ''}</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(t => {
+    const badge = STATUS_BADGE[t.status] || 'badge-pendente';
+    const statusOpts = ['novo','em analise','em desenvolvimento','concluido','recusado']
+      .map(s => `<option value="${s}" ${t.status === s ? 'selected' : ''}>${s}</option>`).join('');
+    return `<tr style="${t.status === 'concluido' || t.status === 'recusado' ? 'opacity:0.6;' : ''}">
+      <td style="font-family:var(--mono);font-size:12px;color:var(--muted);">#${t.id}</td>
+      <td><div class="cell-name">${esc(t.subject)}</div><div class="cell-sub">${esc((t.description || '').slice(0,80))}${(t.description||'').length > 80 ? '…' : ''}</div></td>
+      <td><span class="cell-hotel">${esc(t.partner_name || '—')}</span></td>
+      <td>${PRIORITY_LABEL[t.priority] || '—'}</td>
+      <td><select class="status-select ${badge}" onchange="updateTicketStatus('${t.id}', this.value)">${statusOpts}</select></td>
+      <td style="font-size:12px;color:var(--muted);">${fmtDate(t.created_at)}</td>
+      <td><button class="btn-remove" onclick="deleteTicket('${t.id}')" title="Eliminar">🗑️</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+async function updateTicketStatus(id, status) {
+  const now = status === 'concluido' || status === 'recusado' ? new Date().toISOString() : '';
+  await fetch(`${API}?type=tickets`, {
+    method: 'PUT',
+    body: JSON.stringify({ id, status, resolved_at: now }),
+  });
+  await loadAll();
+  showToast('Estado atualizado ✓');
+}
+
+async function deleteTicket(id) {
+  if (!confirm('Eliminar este ticket?')) return;
+  await fetch(`${API}?type=tickets`, { method: 'DELETE', body: JSON.stringify({ id }) });
+  await loadAll();
+  showToast('Ticket eliminado ✓');
 }
 
 // ── INIT ──────────────────────────────────────────
