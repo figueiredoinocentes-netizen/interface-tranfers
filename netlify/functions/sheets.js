@@ -345,6 +345,38 @@ exports.handler = async (event) => {
 
     // DELETE — hard delete row (drivers/vehicles) or status=cancelado (transfers)
     if (event.httpMethod === 'DELETE') {
+      // Support batch hard-delete: body.ids is an array
+      if (type === 'transfers' && Array.isArray(body.ids)) {
+        const meta = await sheets.spreadsheets.get({ spreadsheetId: SHEET_ID });
+        const tab = meta.data.sheets.find(s => s.properties.title === cfg.name);
+        if (!tab) return err('Sheet tab not found', 404);
+        const sheetId = tab.properties.sheetId;
+
+        const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${cfg.name}!A2:Z` });
+        const allRows = res.data.values || [];
+
+        // Collect row indices to delete (iterate backwards so indices stay valid)
+        const toDelete = [];
+        for (let i = allRows.length - 1; i >= 0; i--) {
+          if (body.ids.includes(String(allRows[i][0]))) {
+            toDelete.push(i + 2); // 1-indexed + header row
+          }
+        }
+
+        await sheets.spreadsheets.batchUpdate({
+          spreadsheetId: SHEET_ID,
+          requestBody: {
+            requests: toDelete.map(sheetRow => ({
+              deleteDimension: {
+                range: { sheetId, dimension: 'ROWS', startIndex: sheetRow - 1, endIndex: sheetRow }
+              }
+            }))
+          }
+        });
+
+        return ok({ ok: true, deleted: toDelete.length });
+      }
+
       const id = String(body.id);
       const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${cfg.name}!A2:Z` });
       const rows = res.data.values || [];
@@ -352,7 +384,7 @@ exports.handler = async (event) => {
       if (rowIndex === -1) return err('Not found', 404);
 
       const sheetRow = rowIndex + 2;
-      if (type === 'transfers') {
+      if (type === 'transfers' && !body.hard) {
         // soft delete — keep row but mark as cancelado
         const col = colLetter(cfg.headers.indexOf('status'));
         await sheets.spreadsheets.values.update({
