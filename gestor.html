@@ -2249,9 +2249,10 @@ async function removeVehicle(id) {
 function calcDriverPayout(price) {
   const v = parseFloat(price);
   if (isNaN(v) || v <= 0) return '';
-  if (v <= 15) return '10';
-  if (v <= 20) return '15';
-  return '20'; // €21+ (inclui >€30)
+  if (v >= 10 && v <= 15) return '10';
+  if (v >= 16 && v <= 20) return '15';
+  if (v >= 21 && v <= 30) return '20';
+  return ''; // fora dos intervalos — gestor preenche manualmente
 }
 
 // ── IMPORT EXCEL ────────────────────────────────
