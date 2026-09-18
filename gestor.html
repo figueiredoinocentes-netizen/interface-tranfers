@@ -1658,7 +1658,7 @@ function renderTransfers() {
           <div>${fmtDate(t.date)}</div>
           <div class="cell-sub">${fmtTime(t.time)}</div>
         </td>
-        <td>${t.price ? '€' + parseFloat(t.price).toFixed(2) : '—'}</td>
+        <td>${(() => { const v = parseFloat(t.price); return isNaN(v) ? '—' : '€' + v.toFixed(2); })()}</td>
       <td><input class="inline-input" type="number" min="0" step="0.01" id="id-payout-${t.id}" value="${t.driver_payout || ''}" placeholder="0.00" onchange="onAssignChange('${t.id}')" style="width:80px;padding:4px 6px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-family:inherit;font-size:13px;text-align:center;" /></td>
       <td>
         <select class="inline-select" id="id-driver-${t.id}" onchange="onAssignChange('${t.id}')" style="min-width:130px;">
@@ -2303,7 +2303,7 @@ async function previewImport() {
     // Map columns by position: A=0, B=1, ...
     // BookingId=0, PickupDate=1, PickupTime=2, CustomerName=3, CustomerPhone=4,
     // PickupAddress=5, FlightNumber=6, DestinationAddress=7, Driver=8, Motorista=9,
-    // Vehicle=10, JourneyDistance=11, Seats=12, VehicleType=13, PrecoParceiro=14
+    // Vehicle=10, JourneyDistance=11, Seats=12, VehicleType=13, AccountReference=14, PrecoParceiro=15
     const dataRows = rows.slice(1).filter(r => r[0] && r[3]); // skip empty rows
     importData = dataRows.map(r => {
       const pickup = String(r[5] || '').trim();
@@ -2344,7 +2344,7 @@ async function previewImport() {
         dir,
         adults: String(r[12] || '1'),
         car_type: carType,
-        price: String(r[14] || ''),
+        price: String(r[15] || ''),
         flight: String(r[6] || '').trim(),
         service_type: 'transfer',
         status: 'pendente',
@@ -2466,7 +2466,7 @@ function renderBatchAssign(items) {
         <div>${fmtDate(t.date)}</div>
         <div class="cell-sub">${fmtTime(t.time)}</div>
       </td>
-      <td>${t.price ? '€' + parseFloat(t.price).toFixed(2) : '—'}</td>
+      <td>${(() => { const v = parseFloat(t.price); return isNaN(v) ? '—' : '€' + v.toFixed(2); })()}</td>
       <td><input class="inline-input" type="number" min="0" step="0.01" id="bd-payout-${t.id}" value="${t.driver_payout || ''}" placeholder="0.00" onchange="onBatchChange('${t.id}')" style="width:80px;padding:4px 6px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-family:inherit;font-size:13px;text-align:center;" /></td>
       <td>
         <select class="inline-select" id="bd-driver-${t.id}" onchange="onBatchChange('${t.id}')" style="min-width:130px;">
