@@ -269,6 +269,30 @@
   }
   .toast.show { opacity: 1; }
 
+  /* FLOATING TICKET BUTTON */
+  .ticket-fab {
+    position: fixed; bottom: 28px; right: 28px; z-index: 99;
+    width: 56px; height: 56px; border-radius: 50%;
+    background: var(--gold); color: #fff; border: none;
+    font-size: 24px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 16px rgba(184,145,58,0.3);
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .ticket-fab:hover { transform: scale(1.08); box-shadow: 0 6px 24px rgba(184,145,58,0.4); }
+  .ticket-fab-badge {
+    position: absolute; top: -4px; right: -4px;
+    background: #e74c3c; color: #fff; font-size: 10px; font-weight: 600;
+    min-width: 18px; height: 18px; border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+    padding: 0 4px; display: none;
+  }
+  .ticket-fab-badge.show { display: flex; }
+
+  @media (max-width: 640px) {
+    .ticket-fab { bottom: 16px; right: 16px; width: 48px; height: 48px; font-size: 20px; }
+  }
+
   .dir-badge {
     font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase;
     padding: 2px 7px; border-radius: 4px; font-weight: 500;
@@ -2688,6 +2712,11 @@ const PRIORITY_LABEL = { baixa: '🟢 Baixa', normal: '🔵 Normal', alta: '🟠
 const STATUS_BADGE = { 'novo': 'badge-pendente', 'em analise': 'badge-por-faturar', 'em desenvolvimento': 'badge-confirmado', 'concluido': 'badge-concluido', 'recusado': 'badge-cancelado' };
 
 function renderTickets() {
+  // Update FAB badge count
+  const openCount = tickets.filter(t => t.status === 'novo' || t.status === 'em analise' || t.status === 'em desenvolvimento').length;
+  const badge = document.getElementById('ticket-fab-badge');
+  if (badge) { badge.textContent = openCount; badge.classList.toggle('show', openCount > 0); }
+
   const tbody = document.getElementById('tickets-tbody');
   let filtered = [...tickets];
   if (ticketFilter !== 'todos') {
@@ -2739,5 +2768,11 @@ async function deleteTicket(id) {
 // ── INIT ──────────────────────────────────────────
 loadAll();
 </script>
+
+<button class="ticket-fab" onclick="openTicketModal()" title="Abrir ticket">
+  🎫
+  <span class="ticket-fab-badge" id="ticket-fab-badge"></span>
+</button>
+
 </body>
 </html>
