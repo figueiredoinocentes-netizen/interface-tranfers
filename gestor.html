@@ -2245,6 +2245,15 @@ async function removeVehicle(id) {
   showToast('Removido ✓');
 }
 
+// ── DRIVER PAYOUT CALC ──────────────────────────
+function calcDriverPayout(price) {
+  const v = parseFloat(price);
+  if (isNaN(v) || v <= 0) return '';
+  if (v <= 15) return '10';
+  if (v <= 20) return '15';
+  return '20'; // €21+ (inclui >€30)
+}
+
 // ── IMPORT EXCEL ────────────────────────────────
 let importData = [];
 
@@ -2389,6 +2398,7 @@ async function previewImport() {
         adults: g(r, 'seats') || '1',
         car_type: carType,
         price: g(r, 'price'),
+        driver_payout: calcDriverPayout(g(r, 'price')),
         flight: g(r, 'flight'),
         service_type: 'transfer',
         status: 'pendente',
