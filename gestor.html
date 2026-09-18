@@ -2299,53 +2299,97 @@ async function previewImport() {
 
     if (rows.length < 2) { showToast('Ficheiro sem dados'); return; }
 
-    const header = rows[0];
-    // Map columns by position: A=0, B=1, ...
-    // BookingId=0, PickupDate=1, PickupTime=2, CustomerName=3, CustomerPhone=4,
-    // PickupAddress=5, FlightNumber=6, DestinationAddress=7, Driver=8, Motorista=9,
-    // Vehicle=10, JourneyDistance=11, Seats=12, VehicleType=13, AccountReference=14, PrecoParceiro=15
-    const dataRows = rows.slice(1).filter(r => r[0] && r[3]); // skip empty rows
+    // Normalise header names for matching: lowercase, remove accents
+    const header = rows[0].map(h => String(h || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''));
+
+    // Known field aliases — detect columns by header text, not position
+    const FIELD_ALIASES = {
+      booking_id: ['booking id', 'bookingid', 'booking', 'id', 'reservation id', 'reservation', 'ref'],
+      date:       ['pickup date', 'pickupdate', 'pick-up date', 'date', 'data', 'service date', 'transfer date'],
+      time:       ['pickup time', 'pickuptime', 'pick-up time', 'time', 'hora'],
+      name:       ['customer name', 'customername', 'passenger name', 'passenger', 'name', 'nome', 'cliente', 'guest'],
+      phone:      ['customer phone', 'customerphone', 'phone', 'telemovel', 'telefone', 'mobile', 'contact', 'celular'],
+      pickup:     ['pickup address', 'pickupaddress', 'pick-up address', 'pickup location', 'address', 'origin', 'origem', 'morada pickup', 'local pickup'],
+      flight:     ['flight number', 'flightnumber', 'flight no', 'flight', 'voo'],
+      destination:['destination address', 'destinationaddress', 'destination', 'destino', 'drop-off address', 'dropoff address', 'dropoff'],
+      seats:      ['seats', 'passengers', 'pax', 'adults', 'adultos', 'lugares', 'number of passengers'],
+      vehicle_type:['vehicle type', 'vehicletype', 'vehicle', 'car type', 'cartype', 'tipo viatura'],
+      price:      ['preco parceiro', 'preco', 'preco venda', 'preço parceiro', 'preço', 'preço venda', 'price', 'pvp', 'total', 'amount', 'fare', 'valor', 'rate'],
+    };
+
+    // Build column index map by matching header names
+    const colMap = {};
+    for (const [field, aliases] of Object.entries(FIELD_ALIASES)) {
+      let idx = -1;
+      for (const alias of aliases) {
+        idx = header.indexOf(alias);
+        if (idx !== -1) break;
+      }
+      colMap[field] = idx;
+    }
+
+    // Fallback: position-based defaults when header matching fails
+    if (colMap.booking_id === -1) colMap.booking_id = 0;
+    if (colMap.date === -1) colMap.date = 1;
+    if (colMap.time === -1) colMap.time = 2;
+    if (colMap.name === -1) colMap.name = 3;
+    if (colMap.phone === -1) colMap.phone = 4;
+    if (colMap.pickup === -1) colMap.pickup = 5;
+    if (colMap.flight === -1) colMap.flight = 6;
+    if (colMap.destination === -1) colMap.destination = 7;
+    if (colMap.seats === -1) colMap.seats = 12;
+    if (colMap.vehicle_type === -1) colMap.vehicle_type = 13;
+    if (colMap.price === -1) colMap.price = 15;
+
+    const g = (row, field) => row[colMap[field]] !== undefined && row[colMap[field]] !== null ? String(row[colMap[field]]).trim() : '';
+
+    const dataRows = rows.slice(1).filter(r => g(r, 'booking_id') && g(r, 'name'));
     importData = dataRows.map(r => {
-      const pickup = String(r[5] || '').trim();
-      const dest = String(r[7] || '').trim();
+      const pickup = g(r, 'pickup');
+      const dest = g(r, 'destination');
       const isPickupAirport = pickup.toUpperCase().includes('AIRPORT') || pickup.toUpperCase().includes('LIS');
       const isDestAirport = dest.toUpperCase().includes('AIRPORT') || dest.toUpperCase().includes('LIS');
       let dir = 'custom';
       if (!isPickupAirport && isDestAirport) dir = 'h2a';
       else if (isPickupAirport && !isDestAirport) dir = 'a2h';
-      const carType = String(r[13] || '').toLowerCase().includes('mini') ? 'van' : 'sedan';
+      const carType = g(r, 'vehicle_type').toLowerCase().includes('mini') ? 'van' : 'sedan';
+
+      const rawDate = r[colMap.date];
       let dateStr = '';
-      if (r[1]) {
-        if (r[1] instanceof Date) dateStr = r[1].toISOString().split('T')[0];
-        else if (typeof r[1] === 'number') dateStr = XLSX.SSF.format('yyyy-mm-dd', r[1]);
-        else dateStr = String(r[1]).split(' ')[0];
+      if (rawDate) {
+        if (rawDate instanceof Date) dateStr = rawDate.toISOString().split('T')[0];
+        else if (typeof rawDate === 'number') dateStr = XLSX.SSF.format('yyyy-mm-dd', rawDate);
+        else dateStr = String(rawDate).split(' ')[0];
       }
+
+      const rawTime = r[colMap.time];
       let timeStr = '';
-      if (r[2]) {
-        if (r[2] instanceof Date) timeStr = r[2].toTimeString().slice(0,5);
-        else if (typeof r[2] === 'number') {
-          const totalMin = Math.round(r[2] * 1440);
+      if (rawTime) {
+        if (rawTime instanceof Date) timeStr = rawTime.toTimeString().slice(0,5);
+        else if (typeof rawTime === 'number') {
+          const totalMin = Math.round(rawTime * 1440);
           const h = Math.floor(totalMin / 60);
           const m = totalMin % 60;
           timeStr = String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
         }
-        else timeStr = String(r[2]).slice(0,5);
+        else timeStr = String(rawTime).slice(0,5);
       }
+
       return {
-        id: String(r[0]),
+        id: g(r, 'booking_id'),
         hotel: partner.name,
         partner_id: String(partnerId),
         date: dateStr,
         time: timeStr,
-        name: String(r[3] || '').trim(),
-        phone: String(r[4] || '').trim(),
+        name: g(r, 'name'),
+        phone: g(r, 'phone'),
         origin: dir === 'custom' ? pickup : (dir === 'h2a' ? pickup : ''),
         destination: dir === 'custom' ? dest : (dir === 'a2h' ? dest : ''),
         dir,
-        adults: String(r[12] || '1'),
+        adults: g(r, 'seats') || '1',
         car_type: carType,
-        price: String(r[15] || ''),
-        flight: String(r[6] || '').trim(),
+        price: g(r, 'price'),
+        flight: g(r, 'flight'),
         service_type: 'transfer',
         status: 'pendente',
         driver: '',
