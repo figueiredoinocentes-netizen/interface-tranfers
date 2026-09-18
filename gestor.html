@@ -2417,40 +2417,18 @@ async function previewImport() {
 
 async function confirmImport() {
   if (!importData.length) return;
-  const btn = document.getElementById('import-confirm-btn');
-  btn.disabled = true;
-  btn.textContent = 'A importar…';
-
-  try {
-    const res = await fetch(`${API}?type=transfers`, {
-      method: 'POST',
-      body: JSON.stringify({ transfers: importData }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Erro no servidor');
-
-    const count = data.imported || 0;
-    const importedIds = importData.map(d => d.id);
-    importData = [];
-    closeImportModal();
-
-    // Reload data and open batch assignment modal
-    await loadAll();
-    openBatchAssignModal(importedIds);
-    showToast(`${count} serviços importados ✓`);
-  } catch (e) {
-    showToast('Erro: ' + e.message);
-    btn.disabled = false;
-    btn.textContent = 'Importar';
-  }
+  const items = importData;
+  importData = [];
+  closeImportModal();
+  openBatchAssignFromImport(items);
+  showToast(`📥 ${items.length} serviços carregados — atribui motorista/viatura e guarda`);
 }
 
-// ── BATCH ASSIGNMENT MODAL ──────────────────────
-let batchAssignIds = [];
+// ── BATCH ASSIGNMENT MODAL (import-only: no DB write until save) ──────
+let batchAssignItems = [];
 
-function openBatchAssignModal(ids) {
-  batchAssignIds = ids;
-  const items = ids.map(id => transfers.find(t => String(t.id) === String(id))).filter(Boolean);
+function openBatchAssignFromImport(items) {
+  batchAssignItems = items.map(t => ({ ...t }));
   if (!items.length) { showToast('Sem serviços para atribuir'); return; }
 
   document.getElementById('batch-title').textContent = `📋 ${items.length} serviços importados`;
@@ -2468,25 +2446,33 @@ async function saveBatchAssign() {
   const btn = document.querySelector('#batch-assign-modal button:first-child');
   btn.disabled = true;
   btn.textContent = 'A guardar…';
-  let saved = 0;
-  for (const id of batchAssignIds) {
-    const driver = document.getElementById('bd-driver-' + id);
-    const vehicle = document.getElementById('bd-vehicle-' + id);
-    const driver_payout = document.getElementById('bd-payout-' + id)?.value || '';
-    if (driver && vehicle && driver.value && vehicle.value) {
-      try {
-        const res = await fetch(`${API}?type=transfers`, {
-          method: 'PUT',
-          body: JSON.stringify({ id, driver: driver.value, vehicle: vehicle.value, driver_payout, status: 'confirmado' }),
-        });
-        if (res.ok) saved++;
-      } catch (_) {}
-    }
+
+  // Merge form values into each item
+  const toSave = batchAssignItems.map(t => {
+    const driver = document.getElementById('bd-driver-' + t.id)?.value || '';
+    const vehicle = document.getElementById('bd-vehicle-' + t.id)?.value || '';
+    const driver_payout = document.getElementById('bd-payout-' + t.id)?.value || '';
+    return { ...t, driver, vehicle, driver_payout, status: driver && vehicle ? 'confirmado' : 'pendente' };
+  });
+
+  try {
+    const res = await fetch(`${API}?type=transfers`, {
+      method: 'POST',
+      body: JSON.stringify({ transfers: toSave }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Erro no servidor');
+
+    btn.disabled = false;
+    btn.textContent = 'Guardar todos';
+    closeBatchAssignModal();
+    await loadAll();
+    showToast(`${data.imported || 0} serviços guardados ✓`);
+  } catch (e) {
+    showToast('Erro ao guardar: ' + e.message);
+    btn.disabled = false;
+    btn.textContent = 'Guardar todos';
   }
-  btn.disabled = false;
-  btn.textContent = 'Guardar todos';
-  await loadAll();
-  showToast(`${saved} serviços guardados ✓`);
 }
 
 function renderBatchAssign(items) {
@@ -2543,29 +2529,12 @@ async function saveBatchAssignment(id) {
   const driver_payout = document.getElementById('bd-payout-' + id).value;
   if (!driver || !vehicle) { showToast('Seleciona motorista e viatura'); return; }
 
-  const btn = document.getElementById('bd-save-' + id);
-  btn.disabled = true;
-  btn.textContent = 'A guardar…';
+  // Update local state only — DB write happens on "Guardar todos"
+  const item = batchAssignItems.find(t => String(t.id) === String(id));
+  if (item) { item.driver = driver; item.vehicle = vehicle; item.driver_payout = driver_payout; }
 
-  try {
-    const res = await fetch(`${API}?type=transfers`, {
-      method: 'PUT',
-      body: JSON.stringify({ id, driver, vehicle, driver_payout, status: 'confirmado' }),
-    });
-    if (!res.ok) throw new Error('Erro ao guardar');
-
-    btn.textContent = '✓';
-    await loadAll();
-
-    // Re-render modal with updated data
-    const items = batchAssignIds.map(i => transfers.find(t => String(t.id) === String(i))).filter(Boolean);
-    renderBatchAssign(items);
-    showToast('Serviço confirmado ✓');
-  } catch (e) {
-    showToast('Erro: ' + e.message);
-    btn.disabled = false;
-    btn.textContent = 'Guardar';
-  }
+  renderBatchAssign(batchAssignItems);
+  showToast('Motorista/viatura atribuídos ✓');
 }
 
 // ── INLINE ASSIGNMENT (pendentes table) ─────────
