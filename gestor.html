@@ -1648,32 +1648,32 @@ function renderTransfers() {
       const driverOpts = drivers.map(d => `<option value="${d.id}" ${String(t.driver) === String(d.id) ? 'selected' : ''}>${d.name}</option>`).join('');
       const vehicleOpts = vehicles.map(v => `<option value="${v.id}" ${String(t.vehicle) === String(v.id) ? 'selected' : ''}>${v.name}</option>`).join('');
       const isSaved = t.driver && t.vehicle;
-      return `<tr style="${isSaved ? 'opacity:0.6;' : ''}border-left:3px solid ${statusColor(t.status)};${isPremiumService(t) ? 'background:rgba(212,175,55,0.04);' : ''}">
+      return `<tr style="cursor:pointer;${isSaved ? 'opacity:0.6;' : ''}border-left:3px solid ${statusColor(t.status)};${isPremiumService(t) ? 'background:rgba(212,175,55,0.04);' : ''}" onclick="openViewServiceModal('${t.id}')">
         <td>
           <div class="cell-name">${t.name || '—'}</div>
           <div class="cell-hotel">${partnerName(t)} ${premiumBadge(t)}</div>
         </td>
-        <td>${dirLabel(t)}</td>
-        <td>
+        <td onclick="event.stopPropagation()">${dirLabel(t)}</td>
+        <td onclick="event.stopPropagation()">
           <div>${fmtDate(t.date)}</div>
           <div class="cell-sub">${fmtTime(t.time)}</div>
         </td>
         <td>${(() => { const v = parseFloat(t.price); return isNaN(v) ? '—' : '€' + v.toFixed(2); })()}</td>
-      <td><input class="inline-input" type="number" min="0" step="0.01" id="id-payout-${t.id}" value="${t.driver_payout || ''}" placeholder="0.00" onchange="onAssignChange('${t.id}')" style="width:80px;padding:4px 6px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-family:inherit;font-size:13px;text-align:center;" /></td>
-      <td>
-        <select class="inline-select" id="id-driver-${t.id}" onchange="onAssignChange('${t.id}')" style="min-width:130px;">
+      <td onclick="event.stopPropagation()"><input class="inline-input" type="number" min="0" step="0.01" id="id-payout-${t.id}" value="${t.driver_payout || ''}" placeholder="0.00" onchange="event.stopPropagation();onAssignChange('${t.id}')" style="width:80px;padding:4px 6px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-family:inherit;font-size:13px;text-align:center;" /></td>
+      <td onclick="event.stopPropagation()">
+        <select class="inline-select" id="id-driver-${t.id}" onchange="event.stopPropagation();onAssignChange('${t.id}')" style="min-width:130px;">
           <option value="">— motorista —</option>
             ${driverOpts}
           </select>
         </td>
-        <td>
-          <select class="inline-select" id="id-vehicle-${t.id}" onchange="onAssignChange('${t.id}')" style="min-width:130px;">
+        <td onclick="event.stopPropagation()">
+          <select class="inline-select" id="id-vehicle-${t.id}" onchange="event.stopPropagation();onAssignChange('${t.id}')" style="min-width:130px;">
             <option value="">— viatura —</option>
             ${vehicleOpts}
           </select>
         </td>
-        <td>
-          <button class="btn-save" id="id-save-${t.id}" onclick="saveAssignment('${t.id}')" ${t.driver && t.vehicle ? '' : ''}>${isSaved ? '✓' : 'Guardar'}</button>
+        <td onclick="event.stopPropagation()">
+          <button class="btn-save" id="id-save-${t.id}" onclick="event.stopPropagation();saveAssignment('${t.id}')" ${t.driver && t.vehicle ? '' : ''}>${isSaved ? '✓' : 'Guardar'}</button>
         </td>
       </tr>`;
     }).join('');
@@ -2457,13 +2457,12 @@ async function saveBatchAssign() {
   const btn = document.querySelector('#batch-assign-modal button:first-child');
   btn.disabled = true;
   btn.textContent = 'A guardar…';
-
-  // Merge form values into each item
+// Merge form values into each item
   const toSave = batchAssignItems.map(t => {
     const driver = document.getElementById('bd-driver-' + t.id)?.value || '';
     const vehicle = document.getElementById('bd-vehicle-' + t.id)?.value || '';
     const driver_payout = document.getElementById('bd-payout-' + t.id)?.value || '';
-    return { ...t, driver, vehicle, driver_payout, status: driver && vehicle ? 'confirmado' : 'pendente' };
+    return { ...t, driver, vehicle, driver_payout };
   });
 
   try {
@@ -2491,7 +2490,7 @@ function renderBatchAssign(items) {
   const assigned = items.filter(t => t.driver && t.vehicle).length;
 
   document.getElementById('batch-progress').textContent =
-    `${assigned} / ${items.length} confirmados`;
+    `${assigned} / ${items.length} com motorista + viatura`;
 
   tbody.innerHTML = items.map(t => {
     const driverOpts = drivers.map(d => `<option value="${d.id}" ${String(t.driver) === String(d.id) ? 'selected' : ''}>${d.name}</option>`).join('');
@@ -2566,16 +2565,17 @@ async function saveAssignment(id) {
   btn.textContent = 'A guardar…';
 
   try {
+    const currentStatus = transfers.find(x => String(x.id) === String(id))?.status || 'pendente';
     const res = await fetch(`${API}?type=transfers`, {
       method: 'PUT',
-      body: JSON.stringify({ id, driver, vehicle, driver_payout, status: 'confirmado' }),
+      body: JSON.stringify({ id, driver, vehicle, driver_payout, status: currentStatus }),
     });
     if (!res.ok) throw new Error('Erro ao guardar');
 
     btn.textContent = '✓';
     btn.disabled = true;
     await loadAll();
-    showToast('Serviço confirmado ✓');
+    showToast('Serviço atualizado ✓');
   } catch (e) {
     showToast('Erro: ' + e.message);
     btn.disabled = false;
