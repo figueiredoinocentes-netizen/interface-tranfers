@@ -1648,34 +1648,7 @@ function renderTransfers() {
       const driverOpts = drivers.map(d => `<option value="${d.id}" ${String(t.driver) === String(d.id) ? 'selected' : ''}>${d.name}</option>`).join('');
       const vehicleOpts = vehicles.map(v => `<option value="${v.id}" ${String(t.vehicle) === String(v.id) ? 'selected' : ''}>${v.name}</option>`).join('');
       const isSaved = t.driver && t.vehicle;
-      return `<tr style="${isSaved ? 'opacity:0.6;' : ''}border-left:3px solid ${statusColor(t.status)};${isPremiumService(t) ? 'background:rgba(212,175,55,0.04);' : ''}">
-        <td>
-          <div class="cell-name">${t.name || '—'}</div>
-          <div class="cell-hotel">${partnerName(t)} ${premiumBadge(t)}</div>
-        </td>
-        <td>${dirLabel(t)}</td>
-        <td>
-          <div>${fmtDate(t.date)}</div>
-          <div class="cell-sub">${fmtTime(t.time)}</div>
-        </td>
-        <td>${(() => { const v = parseFloat(t.price); return isNaN(v) ? '—' : '€' + v.toFixed(2); })()}</td>
-      <td><input class="inline-input" type="number" min="0" step="0.01" id="id-payout-${t.id}" value="${t.driver_payout || ''}" placeholder="0.00" onchange="onAssignChange('${t.id}')" style="width:80px;padding:4px 6px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-family:inherit;font-size:13px;text-align:center;" /></td>
-      <td>
-        <select class="inline-select" id="id-driver-${t.id}" onchange="onAssignChange('${t.id}')" style="min-width:130px;">
-          <option value="">— motorista —</option>
-            ${driverOpts}
-          </select>
-        </td>
-        <td>
-          <select class="inline-select" id="id-vehicle-${t.id}" onchange="onAssignChange('${t.id}')" style="min-width:130px;">
-            <option value="">— viatura —</option>
-            ${vehicleOpts}
-          </select>
-        </td>
-        <td>
-          <button class="btn-save" id="id-save-${t.id}" onclick="saveAssignment('${t.id}')" ${t.driver && t.vehicle ? '' : ''}>${isSaved ? '✓' : 'Guardar'}</button>
-        </td>
-      </tr>`;
+      return `<tr style="cursor:pointer;${isSaved ? 'opacity:0.6;' : ''}border-left:3px solid ${statusColor(t.status)};${isPremiumService(t) ? 'background:rgba(212,175,55,0.04);' : ''}" onclick="openViewServiceModal('${t.id}')">\n        <td>\n          <div class="cell-name">${t.name || '—'}</div>\n          <div class="cell-hotel">${partnerName(t)} ${premiumBadge(t)}</div>\n        </td>\n        <td>${dirLabel(t)}</td>\n        <td>\n          <div>${fmtDate(t.date)}</div>\n          <div class="cell-sub">${fmtTime(t.time)}</div>\n        </td>\n        <td>${(() => { const v = parseFloat(t.price); return isNaN(v) ? '—' : '€' + v.toFixed(2); })()}</td>\n      <td><input class="inline-input" type="number" min="0" step="0.01" id="id-payout-${t.id}" value="${t.driver_payout || ''}" placeholder="0.00" onclick="event.stopPropagation()" onchange="onAssignChange('${t.id}')" style="width:80px;padding:4px 6px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-family:inherit;font-size:13px;text-align:center;" /></td>\n      <td>\n        <select class="inline-select" id="id-driver-${t.id}" onclick="event.stopPropagation()" onchange="onAssignChange('${t.id}')" style="min-width:130px;">\n          <option value="">— motorista —</option>\n            ${driverOpts}\n          </select>\n        </td>\n        <td>\n          <select class="inline-select" id="id-vehicle-${t.id}" onclick="event.stopPropagation()" onchange="onAssignChange('${t.id}')" style="min-width:130px;">\n            <option value="">— viatura —</option>\n            ${vehicleOpts}\n          </select>\n        </td>\n        <td>\n          <button class="btn-save" id="id-save-${t.id}" onclick="event.stopPropagation();saveAssignment('${t.id}')" ${t.driver && t.vehicle ? '' : ''}>${isSaved ? '✓' : 'Guardar'}</button>\n        </td>\n      </tr>`;
     }).join('');
   } else {
     // Reset header to original columns
