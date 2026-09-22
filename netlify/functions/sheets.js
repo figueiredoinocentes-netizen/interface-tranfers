@@ -84,6 +84,31 @@ async function sendTransferEmail(data, id) {
   });
 }
 
+async function sendTicketEmail(data, id) {
+  const apiKey = process.env.RESEND_API_KEY;
+  const to = process.env.MANAGER_EMAIL;
+  if (!apiKey || !to) return;
+  const pl = { baixa: '🟢 Baixa', normal: '🔵 Normal', alta: '🟠 Alta', urgente: '🔴 Urgente' };
+  await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      from: 'Vianta Transfers <onboarding@resend.dev>',
+      to: [to],
+      subject: `🎫 Ticket #${id}: ${data.subject || '(sem assunto)'}`,
+      html: `<div style="font-family:sans-serif;font-size:14px;line-height:1.6">
+<b>Novo ticket #${id}</b><br><br>
+<b>Assunto:</b> ${data.subject || '—'}<br>
+<b>Prioridade:</b> ${pl[data.priority] || data.priority || '—'}<br>
+<b>Parceiro:</b> ${data.partner_name || '—'}<br>
+<b>Descrição:</b><br>
+<pre style="background:#f5f5f5;padding:12px;border-radius:6px;font-size:13px;line-height:1.5;white-space:pre-wrap">${data.description || '—'}</pre><br>
+<a href="https://vianta-transfers.netlify.app/gestor.html">Abrir gestor →</a>
+</div>`,
+    }),
+  });
+}
+
 const SHEETS = {
   transfers: { name: 'Transfers', headers: ['id','hotel','dir','name','adults','children','luggage','child_seat','payment','date','time','flight','arrival','notes','status','driver','vehicle','car_type','partner_id','created_at','child_ages','phone','price','origin','destination','service_type','driver_payout','tour_arrival','dropoff'] },
   drivers:   { name: 'Motoristas', headers: ['id','name','phone','active'] },
@@ -92,6 +117,7 @@ const SHEETS = {
   // one row per partner; 'id' holds the partner's id (1:1 relationship)
   pricing:   { name: 'Precos', headers: ['id','price_h2a_sedan','price_h2a_van','price_a2h_sedan','price_a2h_van','commission_percent'] },
   subscriptions: { name: 'Subscricoes', headers: ['id','endpoint','p256dh','auth'] },
+  tickets:    { name: 'Tickets', headers: ['id','subject','description','priority','status','partner_name','created_at','resolved_at'] },
 };
 
 // Fleet writes to DB Carros (different sheet)
@@ -156,7 +182,7 @@ async function getRows(sheets, type) {
   const cfg = SHEETS[type];
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SHEET_ID,
-    range: `${cfg.name}!A2:Z`,
+    range: `${cfg.name}!A2:AC`,
   });
   const rows = res.data.values || [];
   return rows.map(row => Object.fromEntries(cfg.headers.map((h, i) => [h, row[i] ?? ''])));
@@ -311,14 +337,14 @@ exports.handler = async (event) => {
     // PUT — update transfer (status, driver, vehicle, or full edit)
     if (event.httpMethod === 'PUT') {
       const id = String(body.id);
-      const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${cfg.name}!A2:Z` });
+      const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${cfg.name}!A2:AC` });
       const rows = res.data.values || [];
       const rowIndex = rows.findIndex(r => String(r[0]) === id);
       if (rowIndex === -1) return err('Not found', 404);
 
       const sheetRow = rowIndex + 2;
       const updatableFields = type === 'transfers'
-        ? ['hotel','dir','name','adults','children','luggage','child_seat','payment','date','time','flight','arrival','notes','status','driver','vehicle','car_type','child_ages','phone','price','origin','destination','service_type','tour_arrival','dropoff']
+        ? ['hotel','dir','name','adults','children','luggage','child_seat','payment','date','time','flight','arrival','notes','status','driver','vehicle','car_type','child_ages','phone','price','origin','destination','service_type','tour_arrival','dropoff','driver_payout']
         : type === 'pricing'
         ? ['price_h2a_sedan','price_h2a_van','price_a2h_sedan','price_a2h_van','commission_percent']
         : type === 'partners'
@@ -352,7 +378,7 @@ exports.handler = async (event) => {
         if (!tab) return err('Sheet tab not found', 404);
         const sheetId = tab.properties.sheetId;
 
-        const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${cfg.name}!A2:Z` });
+        const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${cfg.name}!A2:AC` });
         const allRows = res.data.values || [];
 
         // Collect row indices to delete (iterate backwards so indices stay valid)
@@ -378,7 +404,7 @@ exports.handler = async (event) => {
       }
 
       const id = String(body.id);
-      const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${cfg.name}!A2:Z` });
+      const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${cfg.name}!A2:AC` });
       const rows = res.data.values || [];
       const rowIndex = rows.findIndex(r => String(r[0]) === id);
       if (rowIndex === -1) return err('Not found', 404);
