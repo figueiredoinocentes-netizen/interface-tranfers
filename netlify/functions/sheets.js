@@ -156,7 +156,7 @@ async function getRows(sheets, type) {
   const cfg = SHEETS[type];
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SHEET_ID,
-    range: `${cfg.name}!A2:Z`,
+    range: `${cfg.name}!A2:AC`,
   });
   const rows = res.data.values || [];
   return rows.map(row => Object.fromEntries(cfg.headers.map((h, i) => [h, row[i] ?? ''])));
@@ -311,7 +311,7 @@ exports.handler = async (event) => {
     // PUT — update transfer (status, driver, vehicle, or full edit)
     if (event.httpMethod === 'PUT') {
       const id = String(body.id);
-      const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${cfg.name}!A2:Z` });
+      const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${cfg.name}!A2:AC` });
       const rows = res.data.values || [];
       const rowIndex = rows.findIndex(r => String(r[0]) === id);
       if (rowIndex === -1) return err('Not found', 404);
@@ -352,7 +352,7 @@ exports.handler = async (event) => {
         if (!tab) return err('Sheet tab not found', 404);
         const sheetId = tab.properties.sheetId;
 
-        const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${cfg.name}!A2:Z` });
+        const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${cfg.name}!A2:AC` });
         const allRows = res.data.values || [];
 
         // Collect row indices to delete (iterate backwards so indices stay valid)
@@ -378,7 +378,7 @@ exports.handler = async (event) => {
       }
 
       const id = String(body.id);
-      const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${cfg.name}!A2:Z` });
+      const res = await sheets.spreadsheets.values.get({ spreadsheetId: SHEET_ID, range: `${cfg.name}!A2:AC` });
       const rows = res.data.values || [];
       const rowIndex = rows.findIndex(r => String(r[0]) === id);
       if (rowIndex === -1) return err('Not found', 404);

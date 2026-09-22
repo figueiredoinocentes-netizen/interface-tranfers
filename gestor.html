@@ -2436,7 +2436,7 @@ async function saveBatchAssign() {
     const driver = document.getElementById('bd-driver-' + t.id)?.value || '';
     const vehicle = document.getElementById('bd-vehicle-' + t.id)?.value || '';
     const driver_payout = document.getElementById('bd-payout-' + t.id)?.value || '';
-    return { ...t, driver, vehicle, driver_payout, status: driver && vehicle ? 'confirmado' : 'pendente' };
+    return { ...t, driver, vehicle, driver_payout, status: t.status };
   });
 
   try {
@@ -2541,7 +2541,7 @@ async function saveAssignment(id) {
   try {
     const res = await fetch(`${API}?type=transfers`, {
       method: 'PUT',
-      body: JSON.stringify({ id, driver, vehicle, driver_payout, status: 'confirmado' }),
+      body: JSON.stringify({ id, driver, vehicle, driver_payout }),
     });
     if (!res.ok) throw new Error('Erro ao guardar');
 
