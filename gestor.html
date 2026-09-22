@@ -1747,8 +1747,8 @@ function renderTransfers() {
           <div class="cell-name">${t.name || '—'}</div>
           <div class="cell-hotel">${partnerName(t)} ${premiumBadge(t)}</div>
         </td>
-        <td onclick="event.stopPropagation()">${dirLabel(t)}</td>
-        <td onclick="event.stopPropagation()">
+        <td>${dirLabel(t)}</td>
+        <td>
           <div>${fmtDate(t.date)}</div>
           <div class="cell-sub">${fmtTime(t.time)}</div>
         </td>
