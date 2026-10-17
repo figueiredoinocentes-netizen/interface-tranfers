@@ -740,6 +740,14 @@
       </button>
     </div>
 
+    <div class="section-label">Preço</div>
+    <div class="form-row">
+      <div class="form-group" style="margin:0;">
+        <label>Preço (€) <span class="req">*</span></label>
+        <input type="number" id="f-price" min="0" step="0.01" placeholder="0.00" />
+      </div>
+    </div>
+
     <div id="flight-section">
       <div class="section-label">Voo (opcional)</div>
       <div class="form-row">
@@ -970,6 +978,11 @@ async function submitTransfer() {
     alert('Por favor preenche todos os campos obrigatórios (*).');
     return;
   }
+  const price = document.getElementById('f-price').value.trim();
+  if (!price || parseFloat(price) <= 0) {
+    alert('Por favor indica o preço do serviço.');
+    return;
+  }
   if (new Date(date + 'T' + time) < new Date()) {
     alert('A data/hora do serviço não pode estar no passado. Por favor verifica a data e a hora escolhidas.');
     return;
@@ -1037,7 +1050,7 @@ async function submitTransfer() {
     notes: document.getElementById('f-notes').value.trim(),
     status: 'pendente', driver: '',
     partner_id: PARTNER_ID || '',
-    price: lookupPrice(dir, carType),
+    price: parseFloat(price) || 0,
     origin: serviceType === 'tour' ? tourPickup : (dir === 'custom' ? origin : ''),
     destination: serviceType === 'tour' ? tourDestination : (dir === 'custom' ? destination : ''),
     dropoff: serviceType === 'tour' ? tourDropoff : '',
@@ -1047,7 +1060,7 @@ async function submitTransfer() {
 
   await apiPost(t);
 
-  ['f-name','f-phone','f-adults','f-children','f-luggage','f-date','f-time','f-flight','f-arrival','f-notes','f-origin','f-destination','f-tour-pickup','f-tour-destination','f-tour-dropoff','f-tour-arrival'].forEach(id => document.getElementById(id).value = '');
+  ['f-name','f-phone','f-adults','f-children','f-luggage','f-date','f-time','f-flight','f-arrival','f-notes','f-origin','f-destination','f-tour-pickup','f-tour-destination','f-tour-dropoff','f-tour-arrival','f-price'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('f-child-seat').checked = false;
   toggleChildAges();
   setDir('h2a');
