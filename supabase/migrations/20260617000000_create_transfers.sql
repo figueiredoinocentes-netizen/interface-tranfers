@@ -1,21 +1,34 @@
-CREATE TABLE transfers (
+-- Migration: Create transfers table (full schema matching Google Sheet "DB Transfers")
+CREATE TABLE IF NOT EXISTS transfers (
   id TEXT PRIMARY KEY,
   hotel TEXT,
   dir TEXT,
   name TEXT,
-  adults INTEGER DEFAULT 0,
-  children INTEGER DEFAULT 0,
-  luggage INTEGER DEFAULT 0,
+  adults TEXT DEFAULT '0',
+  children TEXT DEFAULT '0',
+  luggage TEXT DEFAULT '0',
   child_seat BOOLEAN DEFAULT false,
   payment TEXT,
-  date DATE,
+  date TEXT,
   time TEXT,
   flight TEXT,
   arrival TEXT,
   notes TEXT,
-  status TEXT DEFAULT 'novo',
+  status TEXT DEFAULT 'pendente',
   driver TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  vehicle TEXT,
+  car_type TEXT,
+  partner_id TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  child_ages TEXT,
+  phone TEXT,
+  price TEXT,
+  origin TEXT,
+  destination TEXT,
+  service_type TEXT DEFAULT 'transfer',
+  driver_payout TEXT,
+  tour_arrival TEXT,
+  dropoff TEXT
 );
 
 ALTER TABLE transfers ENABLE ROW LEVEL SECURITY;

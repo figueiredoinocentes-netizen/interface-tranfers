@@ -820,7 +820,7 @@
 
 <script>/* supabase removed */</script>
 <script>
-const API = '/.netlify/functions/sheets';
+const API = '/.netlify/functions/supabase-transfers';
 // Google Sheets returns booleans as the strings "TRUE"/"FALSE", not real booleans
 function isChildSeat(v) { return v === true || String(v).toUpperCase() === 'TRUE'; }
 const _slug = new URLSearchParams(location.search).get('parceiro') || new URLSearchParams(location.search).get('hotel') || 'onyria';
