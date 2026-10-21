@@ -113,6 +113,29 @@ exports.handler = async (event) => {
 
   const params = event.queryStringParameters || {};
   const type = params.type;
+  
+  // ChoiceCar sheet access (uses Google Sheets API with service account)
+  const CHOICECAR_SHEET_ID = '1VlGZ2FMY0Sxc8InIVRkpGIDtS3jmQ5Nb0Rfm7S2S7qU';
+  if (type === 'choicecar_list_tabs' && event.httpMethod === 'GET') {
+    const { google } = require('googleapis');
+    const creds = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT);
+    const auth = new google.auth.GoogleAuth({ credentials: creds, scopes: ['https://www.googleapis.com/auth/spreadsheets'] });
+    const sheets = google.sheets({ version: 'v4', auth });
+    const meta = await sheets.spreadsheets.get({ spreadsheetId: CHOICECAR_SHEET_ID });
+    const tabs = meta.data.sheets.map(s => ({ name: s.properties.title, gid: s.properties.sheetId }));
+    return ok({ tabs });
+  }
+  if (type === 'choicecar_read_tab' && event.httpMethod === 'GET') {
+    const tab = params.tab;
+    if (!tab) return err('tab parameter required', 400);
+    const { google } = require('googleapis');
+    const creds = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT);
+    const auth = new google.auth.GoogleAuth({ credentials: creds, scopes: ['https://www.googleapis.com/auth/spreadsheets'] });
+    const sheets = google.sheets({ version: 'v4', auth });
+    const res = await sheets.spreadsheets.values.get({ spreadsheetId: CHOICECAR_SHEET_ID, range: `${tab}!A:Q` });
+    return ok({ rows: res.data.values || [] });
+  }
+
   if (!TABLES[type]) return err('Invalid type', 400);
 
   let body = {};
