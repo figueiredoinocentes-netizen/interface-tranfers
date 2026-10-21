@@ -34,8 +34,8 @@ function err(msg, code = 500) { return { statusCode: code, headers: cors(), body
 async function supabaseFetch(path, options = {}) {
   const url = `${SUPABASE_URL}${path}`;
   const res = await fetch(url, {
-    headers: { ...HEADERS, ...options.headers },
     ...options,
+    headers: { ...HEADERS, ...(options.headers || {}) },
   });
   const body = res.status === 204 ? null : await res.json();
   if (!res.ok) throw new Error(`Supabase ${res.status}: ${JSON.stringify(body)}`);

@@ -5,6 +5,7 @@
   # VAPID_PUBLIC_KEY is intentionally public (embedded client-side for Web Push) —
   # exclude it from Netlify's secret-exposure scan to avoid false-positive build failures.
   SECRETS_SCAN_OMIT_KEYS = "VAPID_PUBLIC_KEY"
+  SUPABASE_URL = "https://tuwcllpwvxzmrgrqviqu.supabase.co"
 
 [functions]
   node_bundler = "esbuild"
