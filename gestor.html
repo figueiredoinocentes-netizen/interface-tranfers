@@ -2149,24 +2149,40 @@ async function saveNewService() {
 // ── RENDER DRIVERS (tabela única) ──────────────────
 function h(v) { return v === null || v === undefined || v === '' ? '—' : String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
+const CAT_ORDER = { 'Vianta': 0, 'Fixo': 1, 'Regular': 2, 'Ocasional': 3 };
 function renderDrivers() {
   const el = document.getElementById('drivers-list');
   if (!el) return;
-  const list = drivers.filter(d => d.active).sort((a,b) => (a.name||'').localeCompare(b.name||''));
-  if (!list.length) { el.innerHTML = '<tr><td colspan="4" style="padding:20px;text-align:center;color:#888">Sem motoristas.</td></tr>'; return; }
   const catBadge = c => c ? `<span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;background:${c==='Vianta'?'#e8f5e9':c==='Fixo'?'#e3f2fd':c==='Regular'?'#fff3e0':'#f3e5f5'};color:${c==='Vianta'?'#1b5e20':c==='Fixo'?'#0d47a1':c==='Regular'?'#e65100':'#6a1b9a'}">${h(c)}</span>` : '—';
-  el.innerHTML = list.map(d => `
-    <tr onclick="openDriverModal(${d.id})" style="cursor:pointer;border-bottom:1px solid var(--border)" onmouseover="this.style.background='rgba(127,127,127,0.05)'" onmouseout="this.style.background=''">
+  const inBadge = '<span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;background:#ececec;color:#666">Inativo</span>';
+  const list = [...drivers].sort((a, b) => {
+    const aAct = String(a.active) !== 'false', bAct = String(b.active) !== 'false';
+    if (aAct !== bAct) return aAct ? -1 : 1;
+    const ca = CAT_ORDER[a.category] !== undefined ? CAT_ORDER[a.category] : 9;
+    const cb = CAT_ORDER[b.category] !== undefined ? CAT_ORDER[b.category] : 9;
+    return (ca - cb) || (a.name || '').localeCompare(b.name || '');
+  });
+  if (!list.length) { el.innerHTML = '<tr><td colspan="4" style="padding:20px;text-align:center;color:#888">Sem motoristas.</td></tr>'; return; }
+  el.innerHTML = list.map(d => {
+    const inactive = String(d.active) === 'false';
+    return `
+    <tr onclick="openDriverModal(${d.id})" style="cursor:pointer;border-bottom:1px solid var(--border);${inactive ? 'opacity:0.55;' : ''}" onmouseover="this.style.background='rgba(127,127,127,0.05)'" onmouseout="this.style.background=''">
       <td style="padding:10px 14px"><strong>${h(d.name)}</strong></td>
-      <td style="padding:10px 14px">${catBadge(d.category)}</td>
+      <td style="padding:10px 14px">${inactive ? inBadge : catBadge(d.category)}</td>
       <td style="padding:10px 14px">${h(d.phone)}</td>
       <td style="padding:10px 14px">${d.car ? h(d.car) + (d.plate ? ' <span style="color:#888;font-size:12px">' + h(d.plate) + '</span>' : '') : '—'}</td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
 }
 
 // ── MODAL MOTORISTA ────────────────────────────────
 let editingDriverId = null;
 const DM_DAYS = ['seg','ter','qua','qui','sex','sab','dom'];
+const HOURS = Array.from({length: 49}, (_, i) => { const m = i * 30; return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); });
+function timeOptions(cur) {
+  const vals = HOURS.includes(cur) ? HOURS : [...HOURS, cur].sort();
+  return vals.map(v => `<option value="${v}" ${v === cur ? 'selected' : ''}>${v}</option>`).join('');
+}
 
 function openDriverModal(id) {
   const d = drivers.find(x => String(x.id) === String(id));
@@ -2222,9 +2238,9 @@ function schRowHtml(s, i) {
       <label style="display:inline-flex;align-items:center;gap:3px;font-size:12px;margin-left:4px"><input type="checkbox" data-dm-day="todos" ${all ? 'checked' : ''} onchange="onAllToggle(${i})"> <span>todos</span></label>
     </div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-      <input type="text" class="add-input" value="${h(s.start_time || '09:00')}" data-dm-start="${i}" placeholder="HH:MM" style="max-width:90px;text-align:center" />
+      <select class="add-input" data-dm-start="${i}" style="max-width:104px">${timeOptions(s.start_time || '09:00')}</select>
       <span style="color:#888">→</span>
-      <input type="text" class="add-input" value="${h(s.end_time || '18:00')}" data-dm-end="${i}" placeholder="HH:MM" style="max-width:90px;text-align:center" />
+      <select class="add-input" data-dm-end="${i}" style="max-width:104px">${timeOptions(s.end_time || '18:00')}</select>
       <span style="color:#888;font-size:12px">turno máx (h):</span>
       <input type="number" class="add-input" value="${s.max_shift_h != null ? s.max_shift_h : ''}" data-dm-max="${i}" placeholder="—" style="max-width:64px" />
       <button class="btn-remove" onclick="removeScheduleRow(${i})" style="padding:4px 8px">✕</button>
@@ -2264,8 +2280,8 @@ function collectSchedules() {
   rows.forEach(row => {
     const checked = [...row.querySelectorAll('input[data-dm-day]:checked')].map(b => b.dataset.dmDay);
     const days = checked.includes('todos') || !checked.length ? 'todos' : checked.join(',');
-    const st = (row.querySelector('input[data-dm-start]').value || '09:00').trim();
-    const en = (row.querySelector('input[data-dm-end]').value || '18:00').trim();
+    const st = (row.querySelector('[data-dm-start]').value || '09:00').trim();
+    const en = (row.querySelector('[data-dm-end]').value || '18:00').trim();
     const mx = row.querySelector('input[data-dm-max]').value.trim();
     out.push({ days, start_time: st, end_time: en, max_shift_h: mx ? parseInt(mx, 10) : null });
   });
