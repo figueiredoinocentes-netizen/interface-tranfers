@@ -342,7 +342,7 @@
 <div class="tab-switcher">
   <div class="tab-group">
     <button class="tab active" onclick="switchTab('servicos')">Serviços</button>
-    <button class="tab" onclick="switchTab('equipa')">Motoristas & Viaturas</button>
+    <button class="tab" onclick="switchTab('equipa')">Motoristas</button>
     <button class="tab" onclick="switchTab('calendario')">Calendário</button>
     <button class="tab" onclick="switchTab('parceiros')">Parceiros</button>
     <button class="tab" onclick="switchTab('dashboard')">Dashboard</button>
@@ -402,40 +402,35 @@
   <div class="page-header">
     <div class="page-header-icon">👥</div>
     <div>
-      <div class="page-header-title">Motoristas & Viaturas</div>
-      <div class="page-header-sub">Gerir equipa e frota</div>
+      <div class="page-header-title">Motoristas</div>
+      <div class="page-header-sub">Equipa e frota</div>
     </div>
   </div>
   <div class="container">
-    <div class="team-grid">
-      <!-- MOTORISTAS -->
-      <div class="team-card">
-        <div class="team-card-header">
-          <span class="team-card-title">🧑‍✈️ Motoristas</span>
-        </div>
-        <div class="team-card-body" id="drivers-list">
-          <div class="empty">A carregar…</div>
-        </div>
-        <div class="add-form">
-          <input class="add-input" id="new-driver-name" placeholder="Nome do motorista" />
-          <input class="add-input" id="new-driver-phone" placeholder="Telemóvel" style="max-width:130px;" />
-          <button class="btn-add" onclick="addDriver()">Adicionar</button>
-        </div>
-      </div>
-
-      <!-- VIATURAS -->
-      <div class="team-card">
-        <div class="team-card-header">
-          <span class="team-card-title">🚗 Viaturas</span>
-        </div>
-        <div class="team-card-body" id="vehicles-list">
-          <div class="empty">A carregar…</div>
-        </div>
-        <div class="add-form">
-          <input class="add-input" id="new-vehicle-name" placeholder="Modelo / Matrícula" />
-          <button class="btn-add" onclick="addVehicle()">Adicionar</button>
-        </div>
-      </div>
+    <div class="team-card">
+    <div class="team-card-header">
+      <span class="team-card-title">Motoristas</span>
+      <span style="font-size:12px;color:#888">👆 clica numa linha para editar</span>
+    </div>
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse">
+        <thead>
+          <tr>
+            <th style="text-align:left;padding:10px 14px;font-size:11px;text-transform:uppercase;color:#888;border-bottom:1px solid var(--border)">Nome</th>
+            <th style="text-align:left;padding:10px 14px;font-size:11px;text-transform:uppercase;color:#888;border-bottom:1px solid var(--border)">Regularidade</th>
+            <th style="text-align:left;padding:10px 14px;font-size:11px;text-transform:uppercase;color:#888;border-bottom:1px solid var(--border)">Contacto</th>
+            <th style="text-align:left;padding:10px 14px;font-size:11px;text-transform:uppercase;color:#888;border-bottom:1px solid var(--border)">Carro</th>
+          </tr>
+        </thead>
+        <tbody id="drivers-list">
+          <tr><td colspan="4" style="padding:20px;text-align:center;color:#888">A carregar…</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="add-form">
+      <input class="add-input" id="new-driver-name" placeholder="Nome do motorista" />
+      <input class="add-input" id="new-driver-phone" placeholder="Telemóvel" style="max-width:130px;" />
+      <button class="btn-add" onclick="addDriver()">Adicionar</button>
     </div>
   </div>
 </div>
@@ -1008,6 +1003,47 @@
 </div>
 
 <!-- PARTNER EDIT MODAL -->
+<!-- MODAL MOTORISTA -->
+<div id="driver-modal" onclick="if(event.target===this)closeDriverModal()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:100;align-items:center;justify-content:center;">
+  <div style="background:var(--bg);border-radius:var(--radius-lg);width:660px;max-width:94vw;max-height:88vh;overflow-y:auto;padding:24px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+      <div style="font-size:16px;font-weight:600;" id="dm-title">Motorista</div>
+      <button onclick="closeDriverModal()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#888;">&times;</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+      <div><label style="font-size:11px;text-transform:uppercase;color:#888;font-weight:600">Nome</label><input class="add-input" id="dm-name" style="width:100%;margin-top:4px" /></div>
+      <div><label style="font-size:11px;text-transform:uppercase;color:#888;font-weight:600">Contacto</label><input class="add-input" id="dm-phone" style="width:100%;margin-top:4px" /></div>
+      <div><label style="font-size:11px;text-transform:uppercase;color:#888;font-weight:600">Regularidade</label>
+        <select class="add-input" id="dm-category" style="width:100%;margin-top:4px">
+          <option>Ocasional</option><option>Vianta</option><option>Fixo</option><option>Regular</option>
+        </select></div>
+      <div><label style="font-size:11px;text-transform:uppercase;color:#888;font-weight:600">Residência</label><input class="add-input" id="dm-residence" style="width:100%;margin-top:4px" /></div>
+      <div><label style="font-size:11px;text-transform:uppercase;color:#888;font-weight:600">Tipo de veículo</label>
+        <select class="add-input" id="dm-vtype" style="width:100%;margin-top:4px">
+          <option value="">—</option><option>Sedan</option><option>Luxury</option><option>Luxury/XL</option><option>Monovolume</option><option>Van</option>
+        </select></div>
+      <div><label style="font-size:11px;text-transform:uppercase;color:#888;font-weight:600">Cor</label><input class="add-input" id="dm-color" style="width:100%;margin-top:4px" /></div>
+      <div><label style="font-size:11px;text-transform:uppercase;color:#888;font-weight:600">Carro</label><input class="add-input" id="dm-car" style="width:100%;margin-top:4px" /></div>
+      <div><label style="font-size:11px;text-transform:uppercase;color:#888;font-weight:600">Matrícula</label><input class="add-input" id="dm-plate" style="width:100%;margin-top:4px" /></div>
+    </div>
+    <div style="margin-bottom:12px"><label style="font-size:11px;text-transform:uppercase;color:#888;font-weight:600">Notas</label><input class="add-input" id="dm-notes" style="width:100%;margin-top:4px" /></div>
+    <div style="background:rgba(127,127,127,0.06);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:14px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <label style="font-size:11px;text-transform:uppercase;color:#888;font-weight:600">Horários de trabalho (dias diferentes → horários diferentes)</label>
+        <button class="btn-add" onclick="addScheduleRow()" style="padding:4px 10px;font-size:12px">＋ Horário</button>
+      </div>
+      <div id="dm-schedules"></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <label style="font-size:13px;display:flex;align-items:center;gap:6px"><input type="checkbox" id="dm-active" checked /> Ativo</label>
+      <div style="display:flex;gap:8px">
+        <button class="btn-remove" onclick="removeDriverModal()">Desativar</button>
+        <button class="btn-add" id="dm-save-btn" onclick="saveDriverModal()">Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="partner-modal" onclick="if(event.target===this)closePartnerModal()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:100;align-items:center;justify-content:center;">
   <div style="background:var(--bg);border-radius:var(--radius-lg);width:520px;max-width:92vw;max-height:85vh;overflow-y:auto;padding:24px;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
@@ -2110,67 +2146,202 @@ async function saveNewService() {
   showToast('Serviço criado ✓');
 }
 
-// ── RENDER DRIVERS ────────────────────────────────
+// ── RENDER DRIVERS (tabela única) ──────────────────
+function h(v) { return v === null || v === undefined || v === '' ? '—' : String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
 function renderDrivers() {
   const el = document.getElementById('drivers-list');
-  if (!drivers.length) { el.innerHTML = '<div class="empty">Sem motoristas.</div>'; return; }
-  el.innerHTML = drivers.map(d => `
-    <div class="team-list-item" id="driver-row-${d.id}">
-      <div style="flex:1;" id="driver-view-${d.id}">
-        <div class="team-item-name">${d.name}</div>
-        ${d.phone ? `<div class="team-item-sub">${d.phone}</div>` : ''}
-      </div>
-      <div style="flex:1;display:none;gap:8px;" id="driver-edit-${d.id}">
-        <input class="add-input" id="driver-edit-name-${d.id}" value="${d.name}" style="flex:1;" />
-        <input class="add-input" id="driver-edit-phone-${d.id}" value="${d.phone||''}" style="max-width:120px;" placeholder="Telemóvel" />
-      </div>
-      <div style="display:flex;gap:6px;flex-shrink:0;">
-        <button class="btn-add" id="driver-save-btn-${d.id}" style="display:none;padding:6px 12px;font-size:12px;" onclick="saveDriver(${d.id})">Guardar</button>
-        <button class="btn-add" id="driver-edit-btn-${d.id}" style="padding:6px 12px;font-size:12px;background:transparent;border:1px solid var(--border);color:var(--text);" onclick="startEditDriver(${d.id})">Editar</button>
-        <button class="btn-remove" onclick="removeDriver(${d.id})">Remover</button>
-      </div>
-    </div>`).join('');
+  if (!el) return;
+  const list = drivers.filter(d => d.active).sort((a,b) => (a.name||'').localeCompare(b.name||''));
+  if (!list.length) { el.innerHTML = '<tr><td colspan="4" style="padding:20px;text-align:center;color:#888">Sem motoristas.</td></tr>'; return; }
+  const catBadge = c => c ? `<span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;background:${c==='Vianta'?'#e8f5e9':c==='Fixo'?'#e3f2fd':c==='Regular'?'#fff3e0':'#f3e5f5'};color:${c==='Vianta'?'#1b5e20':c==='Fixo'?'#0d47a1':c==='Regular'?'#e65100':'#6a1b9a'}">${h(c)}</span>` : '—';
+  el.innerHTML = list.map(d => `
+    <tr onclick="openDriverModal(${d.id})" style="cursor:pointer;border-bottom:1px solid var(--border)" onmouseover="this.style.background='rgba(127,127,127,0.05)'" onmouseout="this.style.background=''">
+      <td style="padding:10px 14px"><strong>${h(d.name)}</strong></td>
+      <td style="padding:10px 14px">${catBadge(d.category)}</td>
+      <td style="padding:10px 14px">${h(d.phone)}</td>
+      <td style="padding:10px 14px">${d.car ? h(d.car) + (d.plate ? ' <span style="color:#888;font-size:12px">' + h(d.plate) + '</span>' : '') : '—'}</td>
+    </tr>`).join('');
 }
 
-function startEditDriver(id) {
-  document.getElementById('driver-view-' + id).style.display = 'none';
-  document.getElementById('driver-edit-' + id).style.display = 'flex';
-  document.getElementById('driver-edit-btn-' + id).style.display = 'none';
-  document.getElementById('driver-save-btn-' + id).style.display = '';
+// ── MODAL MOTORISTA ────────────────────────────────
+let editingDriverId = null;
+const DM_DAYS = ['seg','ter','qua','qui','sex','sab','dom'];
+
+function openDriverModal(id) {
+  const d = drivers.find(x => String(x.id) === String(id));
+  if (!d) return;
+  editingDriverId = id;
+  document.getElementById('dm-title').textContent = 'Editar motorista — ' + d.name;
+  document.getElementById('dm-name').value = d.name || '';
+  document.getElementById('dm-phone').value = d.phone || '';
+  document.getElementById('dm-category').value = d.category || 'Ocasional';
+  document.getElementById('dm-residence').value = d.residence || '';
+  document.getElementById('dm-vtype').value = d.vehicle_type || '';
+  document.getElementById('dm-car').value = d.car || '';
+  document.getElementById('dm-plate').value = d.plate || '';
+  document.getElementById('dm-color').value = d.color || '';
+  document.getElementById('dm-notes').value = d.notes || '';
+  document.getElementById('dm-active').checked = String(d.active) !== 'false';
+  loadSchedules(id);
+  document.getElementById('driver-modal').style.display = 'flex';
 }
 
-async function saveDriver(id) {
-  const name = document.getElementById('driver-edit-name-' + id).value.trim();
-  const phone = document.getElementById('driver-edit-phone-' + id).value.trim();
-  if (!name) return;
-  const res = await fetch(`${API}?type=drivers`, { method: 'PUT', body: JSON.stringify({ id, name, phone }) });
-  if (!res.ok) { showToast('Erro ao guardar'); return; }
+function closeDriverModal() {
+  document.getElementById('driver-modal').style.display = 'none';
+  editingDriverId = null;
+}
+
+async function loadSchedules(id) {
+  try {
+    const res = await fetch(`${API}?type=driver_schedules&driver_id=${id}`);
+    const data = await res.json();
+    editingSchedules = Array.isArray(data) ? data : [];
+  } catch (_) { editingSchedules = []; }
+  renderSchedules();
+}
+let editingSchedules = [];
+
+function renderSchedules() {
+  const el = document.getElementById('dm-schedules');
+  if (!el) return;
+  if (!editingSchedules.length) {
+    el.innerHTML = '<div style="color:#888;font-size:13px;padding:6px 0">Sem horário definido (disponível 24h). Clica "+ Horário" para definir.</div>';
+    return;
+  }
+  el.innerHTML = editingSchedules.map((s, i) => schRowHtml(s, i)).join('');
+}
+
+function schRowHtml(s, i) {
+  const days = (s.days || 'todos').split(',');
+  const all = days.includes('todos');
+  const ck = DM_DAYS.map(d =>
+    `<label style="display:inline-flex;align-items:center;gap:3px;margin-right:6px;font-size:12px"><input type="checkbox" data-dm-day="${d}" ${all || days.includes(d) ? 'checked' : ''} onchange="onDayToggle(${i})"> <span>${d}</span></label>`).join('');
+  return `<div style="border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:8px">
+    <div style="margin-bottom:6px">${ck}
+      <label style="display:inline-flex;align-items:center;gap:3px;font-size:12px;margin-left:4px"><input type="checkbox" data-dm-day="todos" ${all ? 'checked' : ''} onchange="onAllToggle(${i})"> <span>todos</span></label>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <input type="text" class="add-input" value="${h(s.start_time || '09:00')}" data-dm-start="${i}" placeholder="HH:MM" style="max-width:90px;text-align:center" />
+      <span style="color:#888">→</span>
+      <input type="text" class="add-input" value="${h(s.end_time || '18:00')}" data-dm-end="${i}" placeholder="HH:MM" style="max-width:90px;text-align:center" />
+      <span style="color:#888;font-size:12px">turno máx (h):</span>
+      <input type="number" class="add-input" value="${s.max_shift_h != null ? s.max_shift_h : ''}" data-dm-max="${i}" placeholder="—" style="max-width:64px" />
+      <button class="btn-remove" onclick="removeScheduleRow(${i})" style="padding:4px 8px">✕</button>
+    </div>
+  </div>`;
+}
+
+function onDayToggle(i) {
+  const rows = document.querySelectorAll('#dm-schedules > div');
+  const row = rows[i]; if (!row) return;
+  const boxes = [...row.querySelectorAll('input[data-dm-day]')];
+  const todos = boxes.find(b => b.dataset.dmDay === 'todos');
+  const days = boxes.filter(b => b.dataset.dmDay !== 'todos');
+  todos.checked = days.every(b => b.checked);
+}
+
+function onAllToggle(i) {
+  const rows = document.querySelectorAll('#dm-schedules > div');
+  const row = rows[i]; if (!row) return;
+  const todos = row.querySelector('input[data-dm-day="todos"]');
+  row.querySelectorAll('input[data-dm-day]:not([data-dm-day="todos"])').forEach(b => b.checked = todos.checked);
+}
+
+function addScheduleRow() {
+  editingSchedules.push({ days: 'todos', start_time: '09:00', end_time: '18:00', max_shift_h: null });
+  renderSchedules();
+}
+
+function removeScheduleRow(i) {
+  editingSchedules.splice(i, 1);
+  renderSchedules();
+}
+
+function collectSchedules() {
+  const rows = document.querySelectorAll('#dm-schedules > div');
+  const out = [];
+  rows.forEach(row => {
+    const checked = [...row.querySelectorAll('input[data-dm-day]:checked')].map(b => b.dataset.dmDay);
+    const days = checked.includes('todos') || !checked.length ? 'todos' : checked.join(',');
+    const st = (row.querySelector('input[data-dm-start]').value || '09:00').trim();
+    const en = (row.querySelector('input[data-dm-end]').value || '18:00').trim();
+    const mx = row.querySelector('input[data-dm-max]').value.trim();
+    out.push({ days, start_time: st, end_time: en, max_shift_h: mx ? parseInt(mx, 10) : null });
+  });
+  return out;
+}
+
+async function saveDriverModal() {
+  if (!editingDriverId) return;
+  const id = editingDriverId;
+  const name = document.getElementById('dm-name').value.trim();
+  if (!name) { showToast('O nome não pode ficar vazio'); return; }
+  const btn = document.getElementById('dm-save-btn');
+  if (btn.disabled) return;
+  btn.disabled = true; btn.textContent = 'A guardar…';
+  const body = {
+    id,
+    name,
+    phone: document.getElementById('dm-phone').value.trim(),
+    category: document.getElementById('dm-category').value,
+    residence: document.getElementById('dm-residence').value.trim(),
+    vehicle_type: document.getElementById('dm-vtype').value,
+    car: document.getElementById('dm-car').value.trim(),
+    plate: document.getElementById('dm-plate').value.trim(),
+    color: document.getElementById('dm-color').value.trim(),
+    notes: document.getElementById('dm-notes').value.trim(),
+    active: document.getElementById('dm-active').checked,
+  };
+  await fetch(`${API}?type=drivers`, { method: 'PUT', body: JSON.stringify(body) });
+  const scheds = collectSchedules();
+  try {
+    const existing = await (await fetch(`${API}?type=driver_schedules&driver_id=${id}`)).json();
+    if (Array.isArray(existing)) {
+      for (const s of existing) await fetch(`${API}?type=driver_schedules`, { method: 'DELETE', body: JSON.stringify({ id: s.id }) });
+    }
+  } catch (_) {}
+  for (const s of scheds) {
+    await fetch(`${API}?type=driver_schedules`, { method: 'POST', body: JSON.stringify({ driver_id: id, days: s.days, start_time: s.start_time, end_time: s.end_time, max_shift_h: s.max_shift_h }) });
+  }
+  btn.disabled = false; btn.textContent = 'Guardar';
+  closeDriverModal();
   await loadAll();
-  showToast('Motorista atualizado ✓');
+  showToast('Motorista guardado ✓');
+}
+
+function removeDriverModal() {
+  if (!editingDriverId) return;
+  if (!confirm('Desativar este motorista?')) return;
+  removeDriver(editingDriverId);
+  closeDriverModal();
 }
 
 async function addDriver() {
   const name = document.getElementById('new-driver-name').value.trim();
   const phone = document.getElementById('new-driver-phone').value.trim();
-  if (!name) return;
+  if (!name) { showToast('Indica um nome'); return; }
   const res = await fetch(`${API}?type=drivers`, { method: 'POST', body: JSON.stringify({ name, phone }) });
   if (!res.ok) { showToast('Erro ao adicionar'); return; }
   document.getElementById('new-driver-name').value = '';
   document.getElementById('new-driver-phone').value = '';
   await loadAll();
-  showToast('Motorista adicionado ✓');
+  const created = drivers.find(x => x.name === name) || drivers[drivers.length - 1];
+  if (created) await openDriverModal(created.id);
+  showToast('Motorista adicionado — completa o horário ✓');
 }
 
 async function removeDriver(id) {
-  if (!confirm('Remover este motorista?')) return;
-  await fetch(`${API}?type=drivers`, { method: 'DELETE', body: JSON.stringify({ id }) });
+  if (!confirm('Desativar este motorista? (pode reativar no modal)')) return;
+  await fetch(`${API}?type=drivers`, { method: 'PUT', body: JSON.stringify({ id, active: false }) });
   await loadAll();
-  showToast('Removido ✓');
+  showToast('Motorista desativado ✓');
 }
 
 // ── RENDER VEHICLES ───────────────────────────────
 function renderVehicles() {
   const el = document.getElementById('vehicles-list');
+  if (!el) return;
   if (!vehicles.length) { el.innerHTML = '<div class="empty">Sem viaturas.</div>'; return; }
   el.innerHTML = vehicles.map(v => `
     <div class="team-list-item" id="vehicle-row-${v.id}">

@@ -12,8 +12,9 @@ const HEADERS = {
 
 const TABLES = {
   transfers:   { headers: ['id','hotel','dir','name','adults','children','luggage','child_seat','payment','date','time','flight','arrival','notes','status','driver','vehicle','car_type','partner_id','created_at','child_ages','phone','price','origin','destination','service_type','driver_payout','tour_arrival','dropoff'] },
-  drivers:     { headers: ['id','name','phone','active'] },
+  drivers:     { headers: ['id','name','phone','active','category','residence','car','plate','color','vehicle_type','notes'] },
   vehicles:    { headers: ['id','name','active'] },
+  driver_schedules: { headers: ['id','driver_id','days','start_time','end_time','max_shift_h'] },
   partners:    { headers: ['id','slug','name','premium'] },
   pricing:     { headers: ['id','price_h2a_sedan','price_h2a_van','price_a2h_sedan','price_a2h_van','commission_percent'] },
   subscriptions: { headers: ['id','endpoint','p256dh','auth'] },
@@ -125,7 +126,11 @@ exports.handler = async (event) => {
         const rows = await supabaseFetch(`/rest/v1/transfers?select=*&order=created_at.desc`);
         return ok(rows.filter(r => r.id));
       }
-      const rows = await supabaseFetch(`/rest/v1/${type}?select=*&order=id.asc`);
+      let path = `/rest/v1/${type}?select=*&order=id.asc`;
+      if (type === 'driver_schedules' && params.driver_id) {
+        path += `&driver_id=eq.${encodeURIComponent(params.driver_id)}`;
+      }
+      const rows = await supabaseFetch(path);
       return ok(rows.filter(r => r.id));
     }
 
@@ -158,6 +163,14 @@ exports.handler = async (event) => {
         newId = body.id || String(Date.now());
       } else if (type === 'pricing') {
         newId = body.id;
+      } else if (type === 'driver_schedules') {
+        // id é SERIAL — deixar o Postgres gerar; devolver a linha criada
+        const result = await supabaseFetch(`/rest/v1/${type}`, {
+          method: 'POST',
+          headers: { 'Prefer': 'return=representation' },
+          body: JSON.stringify(body),
+        });
+        return ok({ ok: true, id: result[0] && result[0].id, row: result[0] });
       } else {
         const existing = await supabaseFetch(`/rest/v1/${type}?select=id&order=id.desc&limit=1`);
         const maxId = existing.length ? parseInt(existing[0].id) || 0 : 0;
@@ -199,6 +212,10 @@ exports.handler = async (event) => {
         ? ['price_h2a_sedan','price_h2a_van','price_a2h_sedan','price_a2h_van','commission_percent']
         : type === 'partners'
         ? ['name', 'premium']
+        : type === 'drivers'
+        ? ['name','phone','active','category','residence','car','plate','color','vehicle_type','notes']
+        : type === 'driver_schedules'
+        ? ['days','start_time','end_time','max_shift_h']
         : ['name','phone','active'];
 
       const updates = {};
