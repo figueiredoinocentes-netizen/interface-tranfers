@@ -399,12 +399,15 @@
 
 <!-- EQUIPA -->
 <div id="page-equipa" class="page">
-  <div class="page-header">
-    <div class="page-header-icon">👥</div>
-    <div>
-      <div class="page-header-title">Motoristas</div>
-      <div class="page-header-sub">Equipa e frota</div>
+  <div class="page-header" style="justify-content:space-between;align-items:center;">
+    <div style="display:flex;align-items:center;gap:16px;">
+      <div class="page-header-icon">👥</div>
+      <div>
+        <div class="page-header-title">Motoristas</div>
+        <div class="page-header-sub">Equipa e frota</div>
+      </div>
     </div>
+    <button class="btn-add" onclick="addDriver()">＋ Novo motorista</button>
   </div>
   <div class="container">
     <div class="team-card">
@@ -426,11 +429,6 @@
           <tr><td colspan="4" style="padding:20px;text-align:center;color:#888">A carregar…</td></tr>
         </tbody>
       </table>
-    </div>
-    <div class="add-form">
-      <input class="add-input" id="new-driver-name" placeholder="Nome do motorista" />
-      <input class="add-input" id="new-driver-phone" placeholder="Telemóvel" style="max-width:130px;" />
-      <button class="btn-add" onclick="addDriver()">Adicionar</button>
     </div>
   </div>
 </div>
@@ -2289,15 +2287,13 @@ function collectSchedules() {
 }
 
 async function saveDriverModal() {
-  if (!editingDriverId) return;
-  const id = editingDriverId;
+  const isNew = editingDriverId === null;
   const name = document.getElementById('dm-name').value.trim();
   if (!name) { showToast('O nome não pode ficar vazio'); return; }
   const btn = document.getElementById('dm-save-btn');
   if (btn.disabled) return;
   btn.disabled = true; btn.textContent = 'A guardar…';
-  const body = {
-    id,
+  const base = {
     name,
     phone: document.getElementById('dm-phone').value.trim(),
     category: document.getElementById('dm-category').value,
@@ -2309,21 +2305,33 @@ async function saveDriverModal() {
     notes: document.getElementById('dm-notes').value.trim(),
     active: document.getElementById('dm-active').checked,
   };
-  await fetch(`${API}?type=drivers`, { method: 'PUT', body: JSON.stringify(body) });
   const scheds = collectSchedules();
+  let driverId = editingDriverId;
   try {
-    const existing = await (await fetch(`${API}?type=driver_schedules&driver_id=${id}`)).json();
-    if (Array.isArray(existing)) {
-      for (const s of existing) await fetch(`${API}?type=driver_schedules`, { method: 'DELETE', body: JSON.stringify({ id: s.id }) });
+    if (isNew) {
+      const res = await fetch(`${API}?type=drivers`, { method: 'POST', body: JSON.stringify(base) });
+      const data = await res.json().catch(() => ({}));
+      if (!data || !data.id) throw new Error('driver não criado');
+      driverId = data.id;
+    } else {
+      await fetch(`${API}?type=drivers`, { method: 'PUT', body: JSON.stringify({ id: editingDriverId, ...base }) });
+      const existing = await (await fetch(`${API}?type=driver_schedules&driver_id=${editingDriverId}`)).json();
+      if (Array.isArray(existing)) {
+        for (const s of existing) await fetch(`${API}?type=driver_schedules`, { method: 'DELETE', body: JSON.stringify({ id: s.id }) });
+      }
     }
-  } catch (_) {}
-  for (const s of scheds) {
-    await fetch(`${API}?type=driver_schedules`, { method: 'POST', body: JSON.stringify({ driver_id: id, days: s.days, start_time: s.start_time, end_time: s.end_time, max_shift_h: s.max_shift_h }) });
+    for (const s of scheds) {
+      await fetch(`${API}?type=driver_schedules`, { method: 'POST', body: JSON.stringify({ driver_id: driverId, days: s.days, start_time: s.start_time, end_time: s.end_time, max_shift_h: s.max_shift_h }) });
+    }
+  } catch (e) {
+    btn.disabled = false; btn.textContent = 'Guardar';
+    showToast('Erro ao guardar: ' + e.message);
+    return;
   }
   btn.disabled = false; btn.textContent = 'Guardar';
   closeDriverModal();
   await loadAll();
-  showToast('Motorista guardado ✓');
+  showToast(isNew ? 'Motorista criado ✓' : 'Motorista guardado ✓');
 }
 
 function removeDriverModal() {
@@ -2333,18 +2341,17 @@ function removeDriverModal() {
   closeDriverModal();
 }
 
-async function addDriver() {
-  const name = document.getElementById('new-driver-name').value.trim();
-  const phone = document.getElementById('new-driver-phone').value.trim();
-  if (!name) { showToast('Indica um nome'); return; }
-  const res = await fetch(`${API}?type=drivers`, { method: 'POST', body: JSON.stringify({ name, phone }) });
-  if (!res.ok) { showToast('Erro ao adicionar'); return; }
-  document.getElementById('new-driver-name').value = '';
-  document.getElementById('new-driver-phone').value = '';
-  await loadAll();
-  const created = drivers.find(x => x.name === name) || drivers[drivers.length - 1];
-  if (created) await openDriverModal(created.id);
-  showToast('Motorista adicionado — completa o horário ✓');
+function addDriver() {
+  // Novo motorista: modal vazio; o Guardar cria + horários
+  editingDriverId = null;
+  document.getElementById('dm-title').textContent = 'Novo motorista';
+  ['dm-name', 'dm-phone', 'dm-residence', 'dm-color', 'dm-car', 'dm-plate', 'dm-notes'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  document.getElementById('dm-category').value = 'Ocasional';
+  document.getElementById('dm-vtype').value = '';
+  document.getElementById('dm-active').checked = true;
+  editingSchedules = [{ days: 'todos', start_time: '09:00', end_time: '18:00', max_shift_h: null }];
+  renderSchedules();
+  document.getElementById('driver-modal').style.display = 'flex';
 }
 
 async function removeDriver(id) {
