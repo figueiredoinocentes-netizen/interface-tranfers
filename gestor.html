@@ -1535,7 +1535,7 @@ function exportDashboardExcel() {
   if (!dashInRange.length) { showToast('Sem dados para exportar'); return; }
 
   const esc = v => '"' + String(v).replace(/"/g, '""') + '"';
-  const header = ['Parceiro', 'Cliente', 'Percurso', 'Tipo', 'Viatura', 'Motorista', 'Pagamento', 'Data', 'Preço', 'Motorista recebe', 'Comissão parceiro', 'Comissão Vianta'];
+  const header = ['Parceiro', 'Cliente', 'Percurso', 'Tipo', 'Viatura', 'Motorista', 'Pagamento', 'Data', 'Preço (€)', 'Motorista recebe (€)', 'Comissão parceiro (€)', 'Comissão Vianta (€)'];
   const sorted = [...dashInRange].sort((a, b) => a.date.localeCompare(b.date));
 
   let totalRevenue = 0, totalDriverPayout = 0, totalPartner = 0, totalVianta = 0;
@@ -1561,14 +1561,14 @@ function exportDashboardExcel() {
       driverLabel,
       t.payment === 'hotel' ? 'Ao hotel' : 'Ao motorista',
       fmtDate(t.date),
-      '€' + price.toFixed(2),
-      '€' + (parseFloat(t.driver_payout) || 0).toFixed(2),
-      '€' + cut.toFixed(2),
-      '€' + (price - cut).toFixed(2)
+      price.toFixed(2),
+      (parseFloat(t.driver_payout) || 0).toFixed(2),
+      cut.toFixed(2),
+      (price - cut).toFixed(2)
     ].map(esc).join(';');
   });
 
-  const totalsRow = ['TOTAL', '', '', '', '', '', '', '', '€' + totalRevenue.toFixed(2), '€' + totalDriverPayout.toFixed(2), '€' + totalPartner.toFixed(2), '€' + totalVianta.toFixed(2)].map(esc).join(';');
+  const totalsRow = ['TOTAL', '', '', '', '', '', '', '', totalRevenue.toFixed(2), totalDriverPayout.toFixed(2), totalPartner.toFixed(2), totalVianta.toFixed(2)].map(esc).join(';');
 
   const csvRows = [header.map(esc).join(';'), ...dataRows, totalsRow];
   const csv = '﻿' + csvRows.join('\r\n'); // BOM for correct accents in Excel
