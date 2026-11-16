@@ -136,6 +136,21 @@ exports.handler = async (event) => {
 
     // POST — create
     if (event.httpMethod === 'POST') {
+      if (type === 'transfers') {
+        const incoming = Array.isArray(body.transfers) ? body.transfers : [body];
+        const partnerNames = new Map();
+        for (const transfer of incoming) {
+          const partnerId = String(transfer.partner_id || '').trim();
+          if (!partnerId) return err('A valid partner_id is required to create a transfer', 400);
+          if (!partnerNames.has(partnerId)) {
+            const partners = await supabaseFetch(`/rest/v1/partners?id=eq.${encodeURIComponent(partnerId)}&select=id,name`);
+            if (!partners.length) return err('The specified partner_id does not exist', 400);
+            partnerNames.set(partnerId, partners[0].name);
+          }
+          transfer.hotel = partnerNames.get(partnerId);
+        }
+      }
+
       // Batch import
       if (type === 'transfers' && Array.isArray(body.transfers)) {
         const rows = body.transfers.map(t => ({
