@@ -11,7 +11,7 @@ const HEADERS = {
 };
 
 const TABLES = {
-  transfers:   { headers: ['id','hotel','dir','name','adults','children','luggage','child_seat','payment','date','time','flight','arrival','notes','status','driver','vehicle','car_type','partner_id','created_at','child_ages','phone','price','origin','destination','service_type','driver_payout','tour_arrival','dropoff'] },
+  transfers:   { headers: ['id','hotel','dir','name','adults','children','luggage','child_seat','payment','date','time','flight','arrival','notes','status','driver','vehicle','car_type','partner_id','created_at','created_via','child_ages','phone','price','origin','destination','service_type','driver_payout','tour_arrival','dropoff'] },
   drivers:     { headers: ['id','name','phone','active','category','residence','car','plate','color','vehicle_type','notes'] },
   vehicles:    { headers: ['id','name','active'] },
   driver_schedules: { headers: ['id','driver_id','days','start_time','end_time','max_shift_h'] },
@@ -148,6 +148,9 @@ exports.handler = async (event) => {
             partnerNames.set(partnerId, partners[0].name);
           }
           transfer.hotel = partnerNames.get(partnerId);
+          transfer.created_via = Array.isArray(body.transfers)
+            ? 'batch_import'
+            : ['partner_portal', 'manager'].includes(transfer.created_via) ? transfer.created_via : 'api';
         }
       }
 

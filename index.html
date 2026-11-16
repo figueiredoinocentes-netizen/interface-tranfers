@@ -1067,6 +1067,7 @@ async function submitTransfer() {
     notes: document.getElementById('f-notes').value.trim(),
     status: 'pendente', driver: '',
     partner_id: PARTNER_ID || '',
+    created_via: 'partner_portal',
     price: parseFloat(price) || 0,
     origin: serviceType === 'tour' ? tourPickup : (dir === 'custom' ? origin : ''),
     destination: serviceType === 'tour' ? tourDestination : (dir === 'custom' ? destination : ''),

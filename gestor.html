@@ -1769,6 +1769,8 @@ function openViewServiceModal(id) {
 
   const driverName = drivers.find(d => String(d.id) === String(t.driver))?.name;
   const rows = [];
+  const sourceLabels = { partner_portal: 'Portal do parceiro', manager: 'Gestor', batch_import: 'Importação em lote', api: 'API / integração' };
+  rows.push(`<div style="grid-column:1/-1">🧾 Origem do pedido: <strong>${sourceLabels[t.created_via] || 'Não registada (serviço anterior)'}</strong></div>`);
   if (t.service_type === 'tour') {
     rows.push(`<div style="grid-column:1/-1">🗺️ ${t.origin||'—'} → ${t.destination||'—'} → ${t.dropoff||'—'}</div>`);
     rows.push(`<div>📅 <strong>${fmtDate(t.date)}</strong></div>`);
@@ -2112,6 +2114,7 @@ async function saveNewService() {
 
   const payload = {
     id: String(Date.now()), hotel: p.name, partner_id: p.id,
+    created_via: 'manager',
     dir: nsDir,
     origin: nsServiceType === 'tour' ? tourPickup : (nsDir === 'custom' ? origin : ''),
     destination: nsServiceType === 'tour' ? tourDestination : (nsDir === 'custom' ? destination : ''),
