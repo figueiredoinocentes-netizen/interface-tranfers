@@ -593,6 +593,12 @@
   </div>
 </div>
 
+<div id="invalid-partner-message" class="container" style="display:none;margin:32px auto;padding:24px;text-align:center;">
+  <div style="font-size:32px;margin-bottom:12px;">🔗</div>
+  <div style="font-size:18px;font-weight:600;margin-bottom:8px;">Link de parceiro necessário</div>
+  <div style="color:var(--muted);font-size:14px;line-height:1.5;">Esta página só permite criar e consultar pedidos através do link próprio do parceiro. Peça ao seu contacto na Vianta o link correto.</div>
+</div>
+
 <!-- HOTEL PAGE -->
 <div id="page-hotel" class="page active">
   <div class="page-header">
@@ -842,7 +848,13 @@ async function initHotelName() {
     const match = Array.isArray(partners) && partners.find(p => p.slug === _slug);
     if (match) { HOTEL = match.name; PARTNER_ID = match.id; }
   } catch (_) {}
-  if (!PARTNER_ID) HOTEL = 'Link de parceiro inválido';
+  if (!PARTNER_ID) {
+    document.querySelector('.tab-switcher').style.display = 'none';
+    document.getElementById('page-hotel').style.display = 'none';
+    document.getElementById('page-painel').style.display = 'none';
+    document.getElementById('invalid-partner-message').style.display = 'block';
+    return;
+  }
   document.getElementById('header-hotel-name').textContent = HOTEL;
   setDir(dir); // refresh route text with real name
 
