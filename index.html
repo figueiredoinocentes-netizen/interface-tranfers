@@ -593,6 +593,12 @@
   </div>
 </div>
 
+<div id="invalid-partner-message" class="container" style="display:none;margin:32px auto;padding:24px;text-align:center;">
+  <div style="font-size:32px;margin-bottom:12px;">🔗</div>
+  <div style="font-size:18px;font-weight:600;margin-bottom:8px;">Link de parceiro necessário</div>
+  <div style="color:var(--muted);font-size:14px;line-height:1.5;">Esta página só permite criar e consultar pedidos através do link exclusivo do parceiro. Para continuar, utilize o link que lhe foi enviado pela Vianta.</div>
+</div>
+
 <!-- HOTEL PAGE -->
 <div id="page-hotel" class="page active">
   <div class="page-header">
@@ -823,8 +829,8 @@
 const API = '/.netlify/functions/supabase-transfers';
 // Google Sheets returns booleans as the strings "TRUE"/"FALSE", not real booleans
 function isChildSeat(v) { return v === true || String(v).toUpperCase() === 'TRUE'; }
-const _slug = new URLSearchParams(location.search).get('parceiro') || new URLSearchParams(location.search).get('hotel') || 'onyria';
-let HOTEL = _slug; // placeholder until API responds
+const _slug = new URLSearchParams(location.search).get('parceiro') || new URLSearchParams(location.search).get('hotel') || '';
+let HOTEL = ''; // only set after a valid partner slug is resolved
 let PARTNER_ID = null;
 let PARTNER_PRICING = null;
 let DRIVERS = [];
@@ -842,6 +848,13 @@ async function initHotelName() {
     const match = Array.isArray(partners) && partners.find(p => p.slug === _slug);
     if (match) { HOTEL = match.name; PARTNER_ID = match.id; }
   } catch (_) {}
+  if (!PARTNER_ID) {
+    document.querySelector('.tab-switcher').style.display = 'none';
+    document.getElementById('page-hotel').style.display = 'none';
+    document.getElementById('page-painel').style.display = 'none';
+    document.getElementById('invalid-partner-message').style.display = 'block';
+    return;
+  }
   document.getElementById('header-hotel-name').textContent = HOTEL;
   setDir(dir); // refresh route text with real name
 
@@ -968,6 +981,10 @@ function setCarType(c) {
 // ── Submit form ────────────────────────────────────────────────
 
 async function submitTransfer() {
+  if (!PARTNER_ID) {
+    alert('Este link não identifica um parceiro válido. Contacta a Vianta para pedir o link correto.');
+    return;
+  }
   const name = document.getElementById('f-name').value.trim();
   const adults = document.getElementById('f-adults').value;
   const date = document.getElementById('f-date').value;
